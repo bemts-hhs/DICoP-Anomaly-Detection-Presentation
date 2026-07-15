@@ -11,16 +11,13 @@ The analysis uses annual record submission counts for each EMS agency and verifi
 Three anomaly detection approaches are implemented:
 
 
-1. Z‑Score Detection
-Year‑over‑year differences and percent changes are approximately normally distributed. Facilities are flagged when the absolute z‑score exceeds 1.5.
+1. **Z‑Score Detection**: Year‑over‑year differences and percent changes are approximately normally distributed. Facilities are flagged when the absolute z‑score exceeds 1.5.
 
 
-2. Percent Change Thresholds
-Facilities are flagged when the absolute percent change between years exceeds 50%, reflecting operationally meaningful deviations.
+2. **Percent Change Thresholds**: Facilities are flagged when the absolute percent change between years exceeds 50%, reflecting operationally meaningful deviations.
 
 
-3. Negative Binomial–Poisson Prediction Interval
-A distribution‑based prediction interval is computed using a hybrid NB–Poisson model. NB is used when variance exceeds the mean. Poisson is used when variance is approximately equal to the mean. A facility is flagged when an observed count falls outside the predicted interval.
+3. **Negative Binomial–Poisson Prediction Interval**: A distribution‑based prediction interval is computed using a hybrid NB–Poisson model. NB is used when variance exceeds the mean. Poisson is used when variance is approximately equal to the mean. A facility is flagged when an observed count falls outside the predicted interval.
 
 Quasi‑Poisson is not used because it is a quasi‑likelihood approach without a defined probability mass function or quantile function.
 

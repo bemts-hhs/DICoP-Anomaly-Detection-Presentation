@@ -1,5 +1,23 @@
 project:
   title: "DICoP-Anomaly-Detection-Presentation"
+  type: default
 
+format:
+  revealjs:
+    theme: revealjs-letterbox/_extensions/EmilHvitfeldt/letterbox/letterbox.scss
+    slide-number: true
+    transition: fade
+    incremental: false
+    chalkboard: false
+    extensions:
+      - letterbox
+
+execute:
+  echo: true
+  warning: false
+  freeze: false
+  cache: false
+
+lang: en
 
 

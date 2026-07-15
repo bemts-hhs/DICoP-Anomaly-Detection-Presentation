@@ -1,7 +1,70 @@
 ---
-title: "DICoP-Anomaly-Detection-Presentation"
+title: "DICoP Annual Anomaly Detection"
+subtitle: "EMS and Trauma Registry Reporting | 2020–2026"
+format:
+  revealjs:
+    theme: revealjs-letterbox/_extensions/EmilHvitfeldt/letterbox/letterbox.scss
+    slide-number: true
+    chalkboard: false
+    incremental: false
+    transition: fade
+    extensions:
+      - letterbox
+execute:
+  echo: true
+  warning: false
+  cache: false
 ---
 
-## Quarto
+# Introduction
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+## Project Purpose
+- Annual anomaly detection for EMS agencies and trauma centers.
+- Use of distributional methods and practical thresholds.
+- Overview of data, methodology, and results.
+
+# Data Description
+
+## Source and Structure
+- Annual counts of record submission (2020–2026).
+- Stable data generating process.
+
+# Probability Distributions
+
+## Refresher
+- Normal
+- Poisson
+- Negative Binomial
+- Why quasi-Poisson was not used.
+
+# Anomaly Detection Methods
+
+## Z‑Score
+- Year-over-year differences.
+- Approximate normality.
+
+## Percent Change
+- Operational thresholding.
+
+## NB–Poisson Prediction Interval
+- Distribution-based expected ranges.
+
+# Results
+
+## Summary of Findings
+- Facilities flagged by each detector.
+- Agreement between detectors.
+
+# Future Extensions
+
+## Alternative Time Scales
+- Weekly or monthly modeling.
+- Regression-based anomaly detection.
+
+# Appendix
+
+## Julia Code Examples
+
+```julia
+# snippets included here
+``` 
