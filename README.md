@@ -21,14 +21,6 @@ Three anomaly detection approaches are implemented:
 
 Quasi‑Poisson is not used because it is a quasi‑likelihood approach without a defined probability mass function or quantile function.
 
-## Project Structure
-
-* Julia/: Analysis scripts, functions, and environment files.
-* data/: Raw, processed, and output datasets.
-* plots/: Generated figures for facility review and distribution assessment.
-* reveal/: RevealJS theme files and presentation assets.
-* DICoP-Anomaly-Detection-Presentation.qmd: Primary Quarto slide deck.
-
 ## Purpose
 
 This project supports epidemiologic surveillance and quality review activities by identifying unusual reporting patterns using a mixture of statistical theory and operational pragmatism.

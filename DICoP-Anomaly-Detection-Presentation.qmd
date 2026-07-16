@@ -2,24 +2,37 @@
 title: "DICoP Annual Anomaly Detection"
 subtitle: "EMS and Trauma Registry Reporting | 2020–2026"
 format:
-  revealjs:
-    theme: revealjs-letterbox/_extensions/EmilHvitfeldt/letterbox/letterbox.scss
-    slide-number: true
+  letterbox-revealjs:
+    output-file: index.html
+    theme: custom.scss
+    logo: figures/HHS_PH_horiz_color_print.jpg
     chalkboard: false
     incremental: false
-    transition: fade
-    extensions:
-      - letterbox
-execute:
-  echo: true
+    transition: slide
+    menu: true
+    slide-number: false
+    self-contained: true
+    toc: false
+    code-overflow: wrap
+    notes: true
+    progress: false
+    title-slide-attributes:
+      class: title-slide
+      data-background-color: white
+      data-background-size: cover
+      data-background-position: center
+execute: 
+  echo: false
   warning: false
-  cache: false
+  message: false
+  eval: true
+  include: false
 ---
 
 ```{julia setup}
 
 #| label: setup
-#| 
+
 ###_____________________________________________________________________________
 # Setup for the anomaly detection project to leverage Tidier and DotEnv
 # Setup for the environment variables to be used to secure filepaths
@@ -43,8 +56,6 @@ using DotEnv
 using CSV
 using XLSX
 using DataFrames
-using Quarto
-using PrettyTables
 using Random
 using Statistics
 using Distributions
@@ -58,18 +69,174 @@ include("./Julia/utils.jl");
 # Load .env file into ENV[]
 DotEnv.load!();
 
-# Assign environment variables (no paths yet)
-iowa_trauma_registry_counts_path = ENV["IOWA_TRAUMA_REGISTRY_COUNTS_PATH"];
-iowa_ems_registry_counts_path = ENV["IOWA_EMS_REGISTRY_COUNTS_PATH"];
+###_____________________________________________________________________________
+# Set up paths to data files using environment variables
+###_____________________________________________________________________________
 
+## Trauma Registry ----
+
+### counts
+iowa_trauma_registry_counts_path = ENV["IOWA_TRAUMA_REGISTRY_DATA_PATH"];
+
+### anomalies
+iowa_trauma_registry_anomalies_path = ENV["IOWA_TRAUMA_REGISTRY_ANOMALIES_DATA_PATH"];
+
+## EMS Registry ----
+
+### counts
+iowa_ems_registry_counts_path = ENV["IOWA_EMS_REGISTRY_DATA_PATH"];
+
+### anomalies
+iowa_ems_registry_anomalies_path = ENV["IOWA_EMS_REGISTRY_ANOMALIES_DATA_PATH"];
+
+```
+
+```{julia data-setup-trauma}
+
+#| label: data-setup-trauma
+
+# load trauma registry counts and differences 
+trauma_counts = DataFrame(
+  XLSX.readtable(iowa_trauma_registry_counts_path, "data")
+  );
+
+# load trauma registry anomalies
+trauma_anomalies = DataFrame(
+  XLSX.readtable(iowa_trauma_registry_anomalies_path, "anomalies")
+  );
+
+# summarize anomalies identified using each strategy for the trauma use case
+trauma_anomalies_summary = @chain trauma_counts begin
+  @summarize(z_anomaly_total = sum(z_anomaly_2025),
+             z_anomaly_only = sum(z_anomaly_2025 & !pct_anomaly_2025 & !nb_pois_anomaly_2025),
+             pct_anomaly_total = sum(pct_anomaly_2025),
+             pct_anomaly_only = sum(pct_anomaly_2025 & !z_anomaly_2025 & !nb_pois_anomaly_2025),
+             nb_anomaly_total = sum(nb_pois_anomaly_2025),
+             nb_anomaly_only = sum(nb_pois_anomaly_2025 & !z_anomaly_2025 & !pct_anomaly_2025),
+             total_anomalies = sum(z_anomaly_2025 | pct_anomaly_2025 | nb_pois_anomaly_2025),
+             total_facilities = n()
+             )
+  @pivot_longer(
+    [z_anomaly_total, z_anomaly_only, pct_anomaly_total, pct_anomaly_only, nb_anomaly_total, nb_anomaly_only], 
+    names_to = anomaly_method, 
+    values_to = anomaly_count
+    )
+  @relocate(
+    [total_anomalies, total_facilities],
+    after = anomaly_count
+  )
+  @mutate(
+    anomaly_pct = round(anomaly_count / total_anomalies * 100; digits=2),
+    facility_pct = round(anomaly_count / total_facilities * 100; digits=2),
+    overall_anomaly_pct = round(total_anomalies / total_facilities * 100; digits=2),
+    anomaly_method = replace.(anomaly_method, r"_total" => "")
+  )
+end
+
+# recalculate anomalies identified using each strategy for the trauma use case, excluding percent change method
+trauma_anomalies_update = @chain trauma_counts begin
+  @summarize(z_anomaly_total = sum(z_anomaly_2025),
+             z_anomaly_only = sum(z_anomaly_2025 & !pct_anomaly_2025 & !nb_pois_anomaly_2025),
+             nb_anomaly_total = sum(nb_pois_anomaly_2025),
+             nb_anomaly_only = sum(nb_pois_anomaly_2025 & !z_anomaly_2025 & !pct_anomaly_2025),
+             total_anomalies = sum(z_anomaly_2025 | nb_pois_anomaly_2025),
+             total_facilities = n()
+             )
+  @pivot_longer(
+    [z_anomaly_total, z_anomaly_only, nb_anomaly_total, nb_anomaly_only], 
+    names_to = anomaly_method, 
+    values_to = anomaly_count
+    )
+  @relocate(
+    [total_anomalies, total_facilities],
+    after = anomaly_count
+  )
+  @mutate(
+    anomaly_pct = round(anomaly_count / total_anomalies * 100; digits=2),
+    facility_pct = round(anomaly_count / total_facilities * 100; digits=2),
+    overall_anomaly_pct = round(total_anomalies / total_facilities * 100; digits=2),
+    anomaly_method = replace.(anomaly_method, r"_total" => "")
+  )
+end
+```
+
+```{julia data-setup-ems}
+
+#| label: data-setup-ems
+
+# load ems registry counts and differences
+ems_counts = DataFrame(
+  XLSX.readtable(iowa_ems_registry_counts_path, "data")
+  );
+
+# load ems registry anomalies
+ems_anomalies = DataFrame(
+  XLSX.readtable(iowa_ems_registry_anomalies_path, "anomalies")
+  );
+
+# calculate differences between anomalies identified using each strategy for the ems use case
+ems_anomalies_summary = @chain ems_counts begin
+  @summarize(z_anomaly_total = sum(z_anomaly_2025),
+             z_anomaly_only = sum(z_anomaly_2025 & !pct_anomaly_2025 & !nb_pois_anomaly_2025),
+             pct_anomaly_total = sum(pct_anomaly_2025),
+             pct_anomaly_only = sum(pct_anomaly_2025 & !z_anomaly_2025 & !nb_pois_anomaly_2025),
+             nb_anomaly_total = sum(nb_pois_anomaly_2025),
+             nb_anomaly_only = sum(nb_pois_anomaly_2025 & !z_anomaly_2025 & !pct_anomaly_2025),
+             total_anomalies = sum(z_anomaly_2025) + sum(pct_anomaly_2025) + sum(nb_pois_anomaly_2025),
+             total_agencies = n()
+             )
+  @pivot_longer(
+    [z_anomaly_total, z_anomaly_only, pct_anomaly_total, pct_anomaly_only, nb_anomaly_total, nb_anomaly_only], 
+    names_to = anomaly_method, 
+    values_to = anomaly_count
+    )
+  @relocate(
+    [total_anomalies, total_agencies],
+    after = anomaly_count
+  )
+  @mutate(
+    anomaly_pct = round(anomaly_count / total_anomalies * 100; digits=2),
+    agency_pct = round(anomaly_count / total_agencies * 100; digits=2),
+    overall_anomaly_pct = round(total_anomalies / total_agencies * 100; digits=2),
+    anomaly_method = replace.(anomaly_method, r"_total" => "")
+  )
+end
+
+# recalculate differences between anomalies identified using each strategy for the ems use case, excluding percent change method
+ems_anomalies_summary_update = @chain ems_counts begin
+  @summarize(z_anomaly_total = sum(z_anomaly_2025),
+             z_anomaly_only = sum(z_anomaly_2025 & !pct_anomaly_2025 & !nb_pois_anomaly_2025),
+             nb_anomaly_total = sum(nb_pois_anomaly_2025),
+             nb_anomaly_only = sum(nb_pois_anomaly_2025 & !z_anomaly_2025 & !pct_anomaly_2025),
+             total_anomalies = sum(z_anomaly_2025 | nb_pois_anomaly_2025),
+             total_agencies = n()
+             )
+  @pivot_longer(
+    [z_anomaly_total, z_anomaly_only, nb_anomaly_total, nb_anomaly_only], 
+    names_to = anomaly_method, 
+    values_to = anomaly_count
+    )
+  @relocate(
+    [total_anomalies, total_agencies],
+    after = anomaly_count
+  )
+  @mutate(
+    anomaly_pct = round(anomaly_count / total_anomalies * 100; digits=2),
+    agency_pct = round(anomaly_count / total_agencies * 100; digits=2),
+    overall_anomaly_pct = round(total_anomalies / total_agencies * 100; digits=2),
+    anomaly_method = replace.(anomaly_method, r"_total" => "")
+  )
+end
 ```
 
 ```{julia dist-setup}
 
-simulate_and_plot("normal")
-simulate_and_plot("poisson")
-simulate_and_plot("quasipoisson")
-simulate_and_plot("nb")
+#| label: dist-setup
+
+plt_norm = simulate_and_plot("normal")
+plt_poisson = simulate_and_plot("poisson")
+plt_quasipoisson = simulate_and_plot("quasipoisson")
+plt_nb = simulate_and_plot("nb")
 
 ```
 
@@ -84,41 +251,271 @@ simulate_and_plot("nb")
 
 ## Source and Structure
 - Annual counts of record submission (2020–2026).
-- Stable data generating process.
+- Stable data generating process via scheduled reports from the registries.
+
+# Distributional Characteristics
+
+* Annual EMS and trauma registry counts follow discrete, right‑skewed distributions.
+* We use probability distributions to characterize expected reporting patterns at the facility or agency level.
+* Emphasis is on the marginal empirical distributions for each reporting entity, not population parameters.
 
 # Probability Distributions
 
-## Refresher
+Important distributions for these data:
+
 - Normal
 - Poisson
 - Negative Binomial
 - Why quasi-Poisson was not used.
 
+---
+
+## Probability Distributions
+
+* A probability distribution describes how a random variable behaves.
+* It specifies the possible values a variable may take and the likelihood associated with each value.
+* It provides a mathematical structure for uncertainty, variation, and randomness.
+* It allows analysts to characterize a variable using parameters such as
+  - mean (\mu) or expected value $E[X]$
+  - variance (\sigma^2)
+  - rate (\lambda)
+  - shape parameters (r, p, \phi).
+
+* It supports modeling, inference, simulation, and prediction across scientific and operational domains.
+
+::: {#note_1 .notes}
+
+* Emphasize that a distribution is not merely a shape, but a complete probabilistic description of a variable.
+* Clarify that analysts do not always need a fitted model; sometimes the distribution is used descriptively or predictively.
+* Reinforce that distributions allow quantification of uncertainty, which is essential in epidemiology, trauma registry research, and EMS systems analysis.
+* Highlight that parameters define expected behavior. For example, μ indicates central tendency, σ² governs spread, and λ describes count intensity.
+* It is helpful to remind the audience that all subsequent anomaly detection rests on selecting a distribution that reflects the empirical process.
+
+:::
+
+---
+
+## Probabilty Density Functions (pdf)
+
+* A PDF applies to continuous random variables.
+* It describes how probability is distributed over intervals of real numbers.
+* It supports probability computations over ranges via integration.
+
+Example notation:
+
+Normal distribution: $X \sim N(\mu, \sigma^2)$
+
+
+::: {#note_2 .notes}
+
+* Stress that a PDF does not give the probability of a single exact value because continuous variables have infinite resolution.
+* Emphasize that PDFs describe “density,” not literal probability.
+* Mention continuous science examples: physiological measurements, reaction times, environmental exposures.
+
+:::
+
+---
+
+## Probability Mass Functions (pmf)
+
+* A PMF applies to discrete random variables.
+* It assigns probabilities to exact integer values or categories.
+* It supports analysis of count outcomes such as incident frequencies or event arrivals.
+* Example notation:
+
+Poisson distribution: $X \sim \text{Poisson}(\lambda)$
+
+Negative Binomial: $X \sim \text{NB}(r, p)$
+
+
+::: {#note_3 .notes}
+
+* State that PMFs handle variables that cannot take fractional values.
+* Clarify that they are appropriate for modeling incident counts, registry submissions, and other non‑continuous phenomena.
+* You may mention that discrete distributions naturally support prediction intervals because probabilities accumulate at exact values.
+
+:::
+
+--- 
+
+## Quantile Functions
+
+* A quantile function is the inverse of a cumulative distribution function (CDF).
+* It maps a probability ppp in the interval [0,1][0, 1][0,1] to the corresponding value of the random variable.
+* Quantile functions identify thresholds such as
+
+  - medians $(p=0.50)$,
+  - quartiles $(p=0.25, 0.75)$,
+  - prediction bounds for future outcomes
+
+* They provide a direct way to translate probability statements into value statements.
+* They are essential for constructing prediction intervals, tolerance intervals, risk thresholds, and outlier rules.
+
+
+::: {#note_3 .notes}
+
+* Clarify that quantile functions are central to anomaly detection because they specify what values are expected with specific probabilities.
+* Emphasize that quantile functions are distribution‑specific. The shape and dispersion determine how extreme a value must be to exceed a given probability threshold.
+* State explicitly that quantile functions allow analysts to identify the 95% and 99% upper bounds, which are often used in surveillance or operational monitoring.
+* Stress that quasi‑Poisson does not have a quantile function because it is a quasi‑likelihood model rather than a fully defined distribution, motivating the NB–Poisson approach in this project.
+
+:::
+
+--- 
+
+## The Normal Distribution
+Notation: $N(\mu, \sigma^2)$
+
+Key Properties:
+
+* Continuous distribution.
+* Symmetric about the mean.
+* Variance controls spread.
+* Often used when many small, independent influences accumulate.
+
+General Uses:
+
+* Measurement data such as heights, blood pressure, or laboratory values.
+* Modeling aggregated effects where the central limit theorem applies.
+* Standardized scoring and z‑score diagnostics.
+
+
+::: {#note_4 .notes}
+
+* The normal distribution describes a continuous variable that varies symmetrically around a mean \mu with variance \sigma^2. 
+* It is used to represent aggregated effects of many small independent influences. It provides a foundation for standardized scoring, confidence intervals, and modeling of continuous measurements.
+* Emphasize symmetry, continuous nature, and interpretability. Clarify that many real‑world variables approximate normal behavior when aggregated over time or individuals.
+
+:::
+
+
+--- 
+
+## Poisson Distribution
+Notation: $X \sim \text{Poisson}(\lambda)$
+
+Key Properties:
+
+* Discrete, integer‑valued distribution.
+* Mean and variance both equal \lambda.
+* Models count processes driven by independent events at a constant rate.
+
+General Uses:
+
+* Incident arrivals, service calls, or event tallies.
+* Modeling photon counts in physical sciences.
+* Queueing systems where events occur independently.
+
+
+::: {#note_5 .notes}
+
+* The Poisson distribution models counts of events that occur independently at a constant rate \lambda. 
+* It assumes equidispersion, meaning the mean and variance are both \lambda. It is frequently used for arrival processes, incident tallies, and other independent event counts.
+* Emphasize equidispersion and independence of event arrivals. Note that it is foundational for many stochastic count processes.
+
+:::
+
+---
+
+## Quasi-Poisson Model
+Notation: $\mu = \lambda, \sigma^2 = \phi\lambda$
+
+Key Properties:
+
+* Extends Poisson to allow overdispersion via φ.
+* Not a fully specified probability distribution.
+* Lacks a PMF, PDF, and quantile function.
+* Used primarily in regression contexts.
+
+General Uses:
+
+* Count regression models with mild overdispersion.
+* Situations where Poisson assumptions fail but a full distribution is not required.
+* Modeling datasets where variance inflation is present.
+
+
+::: {#note_6 .notes}
+
+* The quasi‑Poisson model extends the Poisson framework to allow variance inflation through a dispersion parameter \phi such that $\sigma^2 = \phi\lambda$. It is not a fully specified probability distribution. It is primarily used within generalized linear modeling contexts when count data exhibit mild overdispersion relative to Poisson assumptions.
+* Can be described as a Poisson-Gamma mixture.
+* Clarify that quasi‑Poisson is a quasi‑likelihood framework and cannot generate prediction intervals. Useful in modeling, not in probability‑based decision rules.
+
+:::
+
+---
+
+## Negative Binomial Distribution
+Notation: $X \sim \text{NB}(r, p)$
+
+where r is the number of successes and p is the probability of success.
+
+NB2 Parameterization: $\mu$, $\sigma^2=\mu+\frac{\mu^2}{r}$
+
+Key Properties:
+
+* Discrete distribution with strong right‑skew.
+* Appropriate when variance exceeds the mean.
+* Robust to overdispersion.
+
+General Uses:
+
+* Event counts with substantial heterogeneity.
+* Biological processes with clustering.
+* Overdispersed operational or behavioral data.
+
+
+::: {#note_7 .notes}
+* The negative binomial distribution models discrete counts with variance greater than the mean. Under the NB2 mean‑variance relationship, the mean is μ and the variance is $\sigma^2 = \mu + \frac{\mu^2}{r}$, where r is a shape parameter. 
+* An alternative interpretation views r as the number of successes and models the number of failures before the r‑th success with success probability p. It is widely used for overdispersed count processes.
+* Highlight flexibility and suitability for heavy‑tailed count data. Emphasize that NB supports quantile‑based predictions and formal probability statements.
+
+:::
+
+---
+
 # Anomaly Detection Methods
 
+---
+
 ## Z‑Score
-- Year-over-year differences.
-- Approximate normality.
+* Year-over-year differences.
+* Approximate normality.
+
+---
 
 ## Percent Change
 - Operational thresholding.
 
+---
+
 ## NB–Poisson Prediction Interval
-- Distribution-based expected ranges.
+* Distribution-based expected ranges.
+
+---
 
 # Results
 
+---
+
 ## Summary of Findings
-- Facilities flagged by each detector.
-- Agreement between detectors.
+* Facilities flagged by each detector.
+* Agreement between detectors.
+
+---
 
 # Future Extensions
 
+---
+
 ## Alternative Time Scales
-- Weekly or monthly modeling.
-- Regression-based anomaly detection.
+* Weekly or monthly modeling.
+* Regression-based anomaly detection.
+
+---
 
 # Appendix
+
+---
 
 ## Julia Code Examples
 
