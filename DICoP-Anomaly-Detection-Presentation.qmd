@@ -16,6 +16,63 @@ execute:
   cache: false
 ---
 
+```{julia setup}
+
+#| label: setup
+#| 
+###_____________________________________________________________________________
+# Setup for the anomaly detection project to leverage Tidier and DotEnv
+# Setup for the environment variables to be used to secure filepaths
+###_____________________________________________________________________________
+
+using Pkg
+
+# Ensure required packages are available
+Pkg.activate(".");
+Pkg.instantiate();
+
+# only need to install packages the first time
+# Pkg.add(["Tidier", "TidierPlots", "TidierDates", "Dates", "DotEnv", "CSV", "XLSX", "DataFrames", "Quarto", "PrettyTables", "Statistics", "Distributions", "Random", "Plots", "StatsBase", "StatsPlots"]);
+
+# Load packages
+using Tidier
+using TidierDates
+using Dates
+using TidierPlots
+using DotEnv
+using CSV
+using XLSX
+using DataFrames
+using Quarto
+using PrettyTables
+using Random
+using Statistics
+using Distributions
+using Plots
+using StatsBase
+using StatsPlots
+
+# get custom functions
+include("./Julia/utils.jl");
+
+# Load .env file into ENV[]
+DotEnv.load!();
+
+# Assign environment variables (no paths yet)
+iowa_trauma_registry_counts_path = ENV["IOWA_TRAUMA_REGISTRY_COUNTS_PATH"];
+iowa_ems_registry_counts_path = ENV["IOWA_EMS_REGISTRY_COUNTS_PATH"];
+
+```
+
+```{julia dist-setup}
+
+simulate_and_plot("normal")
+simulate_and_plot("poisson")
+simulate_and_plot("quasipoisson")
+simulate_and_plot("nb")
+
+```
+
 # Introduction
 
 ## Project Purpose
