@@ -1,19 +1,17 @@
 ---
 title: "DICoP Annual Anomaly Detection"
 subtitle: "EMS and Trauma Registry Reporting | 2020–2026"
+date: "2026-07-22"
 format:
   letterbox-revealjs:
     output-file: index.html
     theme: custom.scss
     logo: figures/HHS_PH_horiz_color_print.jpg
-    chalkboard: false
-    incremental: false
     transition: slide
     menu: true
     slide-number: false
     self-contained: true
     toc: false
-    code-overflow: wrap
     notes: true
     progress: false
     title-slide-attributes:
@@ -27,10 +25,19 @@ execute:
   message: false
   eval: true
   include: false
+engine: julia
 ---
 
-```{julia setup}
+# Introduction
 
+## Project Purpose
+* Annual anomaly detection for EMS agencies and trauma centers.
+* Use of distributional methods and practical thresholds.
+* Overview of data, methodology, and results.
+
+<!-- Setup code -->
+
+```{julia}
 #| label: setup
 
 ###_____________________________________________________________________________
@@ -45,15 +52,11 @@ Pkg.activate(".");
 Pkg.instantiate();
 
 # only need to install packages the first time
-# Pkg.add(["Tidier", "TidierPlots", "TidierDates", "Dates", "DotEnv", "CSV", "XLSX", "DataFrames", "Quarto", "PrettyTables", "Statistics", "Distributions", "Random", "Plots", "StatsBase", "StatsPlots"]);
+Pkg.add(["Tidier", "DotEnv", "XLSX", "DataFrames", "Statistics", "Distributions", "Random", "Plots", "StatsBase", "StatsPlots"]);
 
 # Load packages
 using Tidier
-using TidierDates
-using Dates
-using TidierPlots
 using DotEnv
-using CSV
 using XLSX
 using DataFrames
 using Random
@@ -91,8 +94,9 @@ iowa_ems_registry_anomalies_path = ENV["IOWA_EMS_REGISTRY_ANOMALIES_DATA_PATH"];
 
 ```
 
-```{julia data-setup-trauma}
+<!-- Data Setup for Trauma Registry -->
 
+```{julia}
 #| label: data-setup-trauma
 
 # load trauma registry counts and differences 
@@ -160,8 +164,9 @@ trauma_anomalies_update = @chain trauma_counts begin
 end
 ```
 
-```{julia data-setup-ems}
+<!-- Data Setup for EMS Data -->
 
+```{julia}
 #| label: data-setup-ems
 
 # load ems registry counts and differences
@@ -229,8 +234,8 @@ ems_anomalies_summary_update = @chain ems_counts begin
 end
 ```
 
-```{julia dist-setup}
-
+<!-- Create plots of distributions of interest -->
+```{julia}
 #| label: dist-setup
 
 plt_norm = simulate_and_plot("normal")
@@ -240,20 +245,13 @@ plt_nb = simulate_and_plot("nb")
 
 ```
 
-# Introduction
-
-## Project Purpose
-- Annual anomaly detection for EMS agencies and trauma centers.
-- Use of distributional methods and practical thresholds.
-- Overview of data, methodology, and results.
-
 # Data Description
 
 ## Source and Structure
-- Annual counts of record submission (2020–2026).
-- Stable data generating process via scheduled reports from the registries.
+* Annual counts of record submission (2020–2026).
+* Stable data generating process via scheduled reports from the registries.
 
-# Distributional Characteristics
+## Distributional Characteristics
 
 * Annual EMS and trauma registry counts follow discrete, right‑skewed distributions.
 * We use probability distributions to characterize expected reporting patterns at the facility or agency level.
@@ -261,39 +259,44 @@ plt_nb = simulate_and_plot("nb")
 
 # Probability Distributions
 
-Important distributions for these data:
+## Important Distributions
 
 - Normal
 - Poisson
 - Negative Binomial
 - Why quasi-Poisson was not used.
 
----
+ 
 
 ## Probability Distributions
 
 * A probability distribution describes how a random variable behaves.
 * It specifies the possible values a variable may take and the likelihood associated with each value.
-* It provides a mathematical structure for uncertainty, variation, and randomness.
-* It allows analysts to characterize a variable using parameters such as
-  - mean (\mu) or expected value $E[X]$
-  - variance (\sigma^2)
-  - rate (\lambda)
-  - shape parameters (r, p, \phi).
-
-* It supports modeling, inference, simulation, and prediction across scientific and operational domains.
+* Provides a mathematical structure for uncertainty, variation, and randomness.
 
 ::: {#note_1 .notes}
 
 * Emphasize that a distribution is not merely a shape, but a complete probabilistic description of a variable.
 * Clarify that analysts do not always need a fitted model; sometimes the distribution is used descriptively or predictively.
 * Reinforce that distributions allow quantification of uncertainty, which is essential in epidemiology, trauma registry research, and EMS systems analysis.
-* Highlight that parameters define expected behavior. For example, μ indicates central tendency, σ² governs spread, and λ describes count intensity.
+* Highlight that parameters define expected behavior. For example, $\mu$ indicates central tendency, $\sigma^2$ governs spread, and $\lambda$ describes count intensity.
 * It is helpful to remind the audience that all subsequent anomaly detection rests on selecting a distribution that reflects the empirical process.
 
 :::
 
----
+ 
+
+## Probability Distributions
+
+* It allows analysts to characterize a variable using parameters such as
+  - mean ($\mu$) or expected value $E[X]$
+  - variance ($\sigma^2$)
+  - rate (\lambda)
+  - shape parameters $(r, p, \phi)$.
+
+* Supports modeling, inference, simulation, and prediction across scientific and operational domains.
+
+
 
 ## Probabilty Density Functions (pdf)
 
@@ -314,19 +317,13 @@ Normal distribution: $X \sim N(\mu, \sigma^2)$
 
 :::
 
----
+
 
 ## Probability Mass Functions (pmf)
 
 * A PMF applies to discrete random variables.
 * It assigns probabilities to exact integer values or categories.
 * It supports analysis of count outcomes such as incident frequencies or event arrivals.
-* Example notation:
-
-Poisson distribution: $X \sim \text{Poisson}(\lambda)$
-
-Negative Binomial: $X \sim \text{NB}(r, p)$
-
 
 ::: {#note_3 .notes}
 
@@ -336,21 +333,22 @@ Negative Binomial: $X \sim \text{NB}(r, p)$
 
 :::
 
---- 
+
+
+## Probability Mass Functions (pmf)
+
+* Example notation:
+
+Poisson distribution: $X \sim \text{Poisson}(\lambda)$
+
+Negative Binomial: $X \sim \text{NB}(r, p)$
+
+ 
 
 ## Quantile Functions
 
 * A quantile function is the inverse of a cumulative distribution function (CDF).
-* It maps a probability ppp in the interval [0,1][0, 1][0,1] to the corresponding value of the random variable.
-* Quantile functions identify thresholds such as
-
-  - medians $(p=0.50)$,
-  - quartiles $(p=0.25, 0.75)$,
-  - prediction bounds for future outcomes
-
-* They provide a direct way to translate probability statements into value statements.
-* They are essential for constructing prediction intervals, tolerance intervals, risk thresholds, and outlier rules.
-
+* It maps a probability $p$ in the interval $[0,1]$ to the corresponding value of the random variable.
 
 ::: {#note_3 .notes}
 
@@ -361,7 +359,20 @@ Negative Binomial: $X \sim \text{NB}(r, p)$
 
 :::
 
---- 
+
+
+## Quantile Functions
+
+* Quantile functions identify thresholds such as
+
+  - medians $(p=0.50)$,
+  - quartiles $(p=0.25, 0.75)$,
+  - prediction bounds for future outcomes
+
+* They provide a direct way to translate probability statements into value statements.
+* They are essential for constructing prediction intervals, tolerance intervals, risk thresholds, and outlier rules.
+
+ 
 
 ## The Normal Distribution
 Notation: $N(\mu, \sigma^2)$
@@ -373,13 +384,6 @@ Key Properties:
 * Variance controls spread.
 * Often used when many small, independent influences accumulate.
 
-General Uses:
-
-* Measurement data such as heights, blood pressure, or laboratory values.
-* Modeling aggregated effects where the central limit theorem applies.
-* Standardized scoring and z‑score diagnostics.
-
-
 ::: {#note_4 .notes}
 
 * The normal distribution describes a continuous variable that varies symmetrically around a mean \mu with variance \sigma^2. 
@@ -389,7 +393,16 @@ General Uses:
 :::
 
 
---- 
+
+## The Normal Distribution
+
+General Uses:
+
+* Measurement data such as heights, blood pressure, or laboratory values.
+* Modeling aggregated effects where the central limit theorem applies.
+* Standardized scoring and z‑score diagnostics.
+
+ 
 
 ## Poisson Distribution
 Notation: $X \sim \text{Poisson}(\lambda)$
@@ -400,13 +413,6 @@ Key Properties:
 * Mean and variance both equal \lambda.
 * Models count processes driven by independent events at a constant rate.
 
-General Uses:
-
-* Incident arrivals, service calls, or event tallies.
-* Modeling photon counts in physical sciences.
-* Queueing systems where events occur independently.
-
-
 ::: {#note_5 .notes}
 
 * The Poisson distribution models counts of events that occur independently at a constant rate \lambda. 
@@ -415,7 +421,17 @@ General Uses:
 
 :::
 
----
+ 
+
+## Poisson Distribution
+
+General Uses:
+
+* Incident arrivals, service calls, or event tallies.
+* Modeling photon counts in physical sciences.
+* Queueing systems where events occur independently.
+
+
 
 ## Quasi-Poisson Model
 Notation: $\mu = \lambda, \sigma^2 = \phi\lambda$
@@ -427,13 +443,6 @@ Key Properties:
 * Lacks a PMF, PDF, and quantile function.
 * Used primarily in regression contexts.
 
-General Uses:
-
-* Count regression models with mild overdispersion.
-* Situations where Poisson assumptions fail but a full distribution is not required.
-* Modeling datasets where variance inflation is present.
-
-
 ::: {#note_6 .notes}
 
 * The quasi‑Poisson model extends the Poisson framework to allow variance inflation through a dispersion parameter \phi such that $\sigma^2 = \phi\lambda$. It is not a fully specified probability distribution. It is primarily used within generalized linear modeling contexts when count data exhibit mild overdispersion relative to Poisson assumptions.
@@ -442,7 +451,17 @@ General Uses:
 
 :::
 
----
+
+
+## Quasi-Poisson Model
+
+General Uses:
+
+* Count regression models with mild overdispersion.
+* Situations where Poisson assumptions fail but a full distribution is not required.
+* Modeling datasets where variance inflation is present.
+
+
 
 ## Negative Binomial Distribution
 Notation: $X \sim \text{NB}(r, p)$
@@ -457,13 +476,6 @@ Key Properties:
 * Appropriate when variance exceeds the mean.
 * Robust to overdispersion.
 
-General Uses:
-
-* Event counts with substantial heterogeneity.
-* Biological processes with clustering.
-* Overdispersed operational or behavioral data.
-
-
 ::: {#note_7 .notes}
 * The negative binomial distribution models discrete counts with variance greater than the mean. Under the NB2 mean‑variance relationship, the mean is μ and the variance is $\sigma^2 = \mu + \frac{\mu^2}{r}$, where r is a shape parameter. 
 * An alternative interpretation views r as the number of successes and models the number of failures before the r‑th success with success probability p. It is widely used for overdispersed count processes.
@@ -471,51 +483,45 @@ General Uses:
 
 :::
 
----
+
+
+## Negative Binomial Distribution
+
+General Uses:
+
+* Event counts with substantial heterogeneity.
+* Biological processes with clustering.
+* Overdispersed operational or behavioral data.
 
 # Anomaly Detection Methods
-
----
 
 ## Z‑Score
 * Year-over-year differences.
 * Approximate normality.
 
----
+
 
 ## Percent Change
 - Operational thresholding.
 
----
+
 
 ## NB–Poisson Prediction Interval
 * Distribution-based expected ranges.
 
----
-
 # Results
-
----
 
 ## Summary of Findings
 * Facilities flagged by each detector.
 * Agreement between detectors.
 
----
-
 # Future Extensions
-
----
 
 ## Alternative Time Scales
 * Weekly or monthly modeling.
 * Regression-based anomaly detection.
 
----
-
 # Appendix
-
----
 
 ## Julia Code Examples
 
