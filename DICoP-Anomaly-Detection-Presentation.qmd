@@ -52,10 +52,11 @@ Pkg.activate(".");
 Pkg.instantiate();
 
 # only need to install packages the first time
-Pkg.add(["Tidier", "DotEnv", "XLSX", "DataFrames", "Statistics", "Distributions", "Random", "Plots", "StatsBase", "StatsPlots"]);
+Pkg.add(["Tidier", "PrettyTables", "DotEnv", "XLSX", "DataFrames", "Statistics", "Distributions", "Random", "Plots", "StatsBase", "StatsPlots"]);
 
 # Load packages
 using Tidier
+using PrettyTables
 using DotEnv
 using XLSX
 using DataFrames
@@ -135,7 +136,7 @@ trauma_anomalies_summary = @chain trauma_counts begin
     overall_anomaly_pct = round(total_anomalies / total_facilities * 100; digits=2),
     anomaly_method = replace.(anomaly_method, r"_total" => "")
   )
-end
+end;
 
 # recalculate anomalies identified using each strategy for the trauma use case, excluding percent change method
 trauma_anomalies_update = @chain trauma_counts begin
@@ -161,7 +162,7 @@ trauma_anomalies_update = @chain trauma_counts begin
     overall_anomaly_pct = round(total_anomalies / total_facilities * 100; digits=2),
     anomaly_method = replace.(anomaly_method, r"_total" => "")
   )
-end
+end;
 ```
 
 <!-- Data Setup for EMS Data -->
@@ -205,7 +206,7 @@ ems_anomalies_summary = @chain ems_counts begin
     overall_anomaly_pct = round(total_anomalies / total_agencies * 100; digits=2),
     anomaly_method = replace.(anomaly_method, r"_total" => "")
   )
-end
+end;
 
 # recalculate differences between anomalies identified using each strategy for the ems use case, excluding percent change method
 ems_anomalies_summary_update = @chain ems_counts begin
@@ -231,17 +232,17 @@ ems_anomalies_summary_update = @chain ems_counts begin
     overall_anomaly_pct = round(total_anomalies / total_agencies * 100; digits=2),
     anomaly_method = replace.(anomaly_method, r"_total" => "")
   )
-end
+end;
 ```
 
 <!-- Create plots of distributions of interest -->
 ```{julia}
 #| label: dist-setup
 
-plt_norm = simulate_and_plot("normal")
-plt_poisson = simulate_and_plot("poisson")
-plt_quasipoisson = simulate_and_plot("quasipoisson")
-plt_nb = simulate_and_plot("nb")
+plt_norm = simulate_and_plot("normal");
+plt_poisson = simulate_and_plot("poisson");
+plt_quasipoisson = simulate_and_plot("quasipoisson");
+plt_nb = simulate_and_plot("nb");
 
 ```
 
