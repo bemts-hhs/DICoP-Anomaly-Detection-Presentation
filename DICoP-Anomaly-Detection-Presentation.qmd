@@ -2,10 +2,6 @@
 title: "DICoP Annual Anomaly Detection"
 subtitle: "EMS and Trauma Registry Reporting | 2020–2026"
 date: "2026-07-22"
-revealjs-plugins: 
-  - editable
-filters: 
-  - editable
 format:
   letterbox-revealjs:
     output-file: index.html
@@ -66,7 +62,7 @@ Pkg.activate(".");
 Pkg.instantiate();
 
 # only need to install packages the first time
-Pkg.add(["Tidier", "PrettyTables", "DotEnv", "XLSX", "DataFrames", "Statistics", "Distributions", "Random", "Plots", "StatsBase", "StatsPlots"]);
+Pkg.add(["Tidier", "TidierPlots", "PrettyTables", "DotEnv", "XLSX", "DataFrames", "Statistics", "Distributions", "Random", "Plots", "StatsBase", "StatsPlots"]);
 
 # Load packages
 using Tidier
@@ -407,7 +403,204 @@ trauma_obs_dist_diffs = ggplot(
     # save the truama overall empirical distribution raincloud plot
     ggsave(trauma_obs_dist_diffs, "./plots/distribution_plots/trauma_observed_dist_diffs.png")
 
-## get the empirical distribution of reporting differences 
+# get a temp df for a few trauma facilities
+trauma_count_plot_subset = filter(:facility_id => f -> occursin.(r"Facility_1[0-9][0-9]$", f), trauma_counts_long);
+
+## get the empirical distribution of record counts among a few facilities
+# For loop to make plots for each facility to examine 
+# the distribution of their record counts over the
+# years
+for f in unique(trauma_count_plot_subset.facility_id)
+
+    # subset current facility
+    df_f = subset(trauma_count_plot_subset, :facility_id => x -> x .== f)
+
+    # build raincloud plots
+    p_rain =
+        ggplot(df_f, aes(x=:count, y=:facility_id)) +
+        geom_rainclouds(
+            plot_boxplots=true,
+            show_boxplot_outliers=true,
+            show_median=true,
+            color=RGBA(220/255, 20/255, 60/255, 0.4),
+            size=3,
+            stroke=0
+        ) +
+        labs(
+            title="$f",
+            subtitle="Distribution of Record Counts $(report_years)",
+            x="",
+            y=""
+        ) +
+        theme_minimal()
+
+    # save each raincloud plot
+    ggsave(p_rain, "plots/distribution_plots/marginal_trauma_count/marginal_count_dist_$(f).png")
+
+end;
+
+# get a temp df for a few trauma facilities - differences
+trauma_diff_plot_subset = subset(trauma_diff_plot_df, :facility_id => f -> occursin.(r"Facility_1[0-9][0-9]$", f), :measure => m -> occursin.(r"diff_", m));
+
+## get the empirical distribution of reporting differences among a few facilities
+# For loop to make plots for each facility to examine 
+# the distribution of their reporting differences over the
+# years
+for f in unique(trauma_diff_plot_subset.facility_id)
+
+    # subset current facility
+    df_f = subset(trauma_diff_plot_subset, :facility_id => x -> x .== f)
+trauma_diff_plot_subset
+    # build raincloud plots
+    p_rain =
+        ggplot(df_f, aes(x=:diff, y=:facility_id)) +
+        geom_rainclouds(
+            plot_boxplots=true,
+            show_boxplot_outliers=true,
+            show_median=true,
+            color=RGBA(220/255, 20/255, 60/255, 0.4),
+            size=3,
+            stroke=0
+        ) +
+        labs(
+            title="$f",
+            subtitle="Distribution of Reporting Differences $(report_years)",
+            x="",
+            y=""
+        ) +
+        theme_minimal()
+
+    # save each raincloud plot
+    ggsave(p_rain, "plots/distribution_plots/marginal_trauma_diff/marginal_diff_dist_$(f).png")
+
+end;
+
+# Empirical Distribution plots - ems registry
+
+## temp df for plotting count distribution
+ems_count_plot_df = ems_counts_long;
+ems_count_plot_df.year .= "All Years";
+
+## temp df for plotting diff distribution
+ems_diff_plot_df = ems_diffs_long;
+ems_diff_plot_df.year .= "All Years";
+
+## get the empirical distribution of counts - trauma
+ems_obs_dist_counts = ggplot(ems_count_plot_df, aes(x=:count, y = :year)) + 
+                         geom_rainclouds(
+                          plot_boxplots=true,
+                          show_boxplot_outliers=true,
+                          show_median=true,
+                          color=RGBA(255/255, 140/255, 0/255, 0.4),
+                          size=3,
+                          stroke=0
+                          ) +
+                          labs(
+                          title="Distribution of Annual Record Counts per EMS Agency",
+                          subtitle="Source: Iowa EMS Registry $(report_years)",
+                          x="",
+                          y=""
+                          ) +
+                          theme_minimal();
+
+    # save the truama overall empirical distribution raincloud plot
+    ggsave(ems_obs_dist_counts, "./plots/distribution_plots/ems_observed_dist_counts.png")
+
+## get the empirical distribution of reporting differences - trauma
+ems_obs_dist_diffs = ggplot(
+                         filter(:measure => m -> occursin.(r"diff_"i, m), ems_diff_plot_df), 
+                         aes(x=:diff, y = :year)
+                         ) + 
+                         geom_rainclouds(
+                          plot_boxplots=true,
+                          show_boxplot_outliers=true,
+                          show_median=true,
+                          color=RGBA(255/255, 140/255, 0/255, 0.4),
+                          size=3,
+                          stroke=0
+                          ) +
+                          labs(
+                          title="Distribution of Year-to-Year Reporting Differences per EMS Agency",
+                          subtitle="Source: Iowa EMS Registry $(report_years)",
+                          x="",
+                          y=""
+                          ) +
+                          theme_minimal();
+
+    # save the truama overall empirical distribution raincloud plot
+    ggsave(ems_obs_dist_diffs, "./plots/distribution_plots/ems_observed_dist_diffs.png")
+
+# get a temp df for a few trauma facilities
+ems_count_plot_subset = filter(:agency_id => a -> occursin.(r"Agency_1[0-9][0-9]$", a), ems_counts_long);
+
+## get the empirical distribution of record counts among a few facilities
+# For loop to make plots for each facility to examine 
+# the distribution of their record counts over the
+# years
+for a in unique(ems_count_plot_subset.agency_id)
+
+    # subset current facility
+    df_f = subset(ems_count_plot_subset, :agency_id => x -> x .== a)
+
+    # build raincloud plots
+    p_rain =
+        ggplot(df_f, aes(x=:count, y=:agency_id)) +
+        geom_rainclouds(
+            plot_boxplots=true,
+            show_boxplot_outliers=true,
+            show_median=true,
+            color=RGBA(255/255, 140/255, 0/255, 0.4),
+            size=5,
+            stroke=0
+        ) +
+        labs(
+            title="$a",
+            subtitle="Distribution of Record Counts $(report_years)",
+            x="",
+            y=""
+        ) +
+        theme_minimal()
+
+    # save each raincloud plot
+    ggsave(p_rain, "plots/distribution_plots/marginal_ems_count/marginal_count_dist_$(a).png")
+
+end;
+
+# get a temp df for a few trauma facilities - differences
+ems_diff_plot_subset = subset(ems_diff_plot_df, :agency_id => a -> occursin.(r"Agency_1[0-9][0-9]$", a), :measure => m -> occursin.(r"diff_", m));
+
+## get the empirical distribution of reporting differences among a few facilities
+# For loop to make plots for each facility to examine 
+# the distribution of their reporting differences over the
+# years
+for a in unique(ems_diff_plot_subset.agency_id)
+
+    # subset current facility
+    df_f = subset(ems_diff_plot_subset, :agency_id => x -> x .== a)
+
+    # build raincloud plots
+    p_rain =
+        ggplot(df_f, aes(x=:diff, y=:agency_id)) +
+        geom_rainclouds(
+            plot_boxplots=true,
+            show_boxplot_outliers=true,
+            show_median=true,
+            color=RGBA(255/255, 140/255, 0/255, 0.4),
+            size=5,
+            stroke=0
+        ) +
+        labs(
+            title="$a",
+            subtitle="Distribution of Reporting Differences $(report_years)",
+            x="",
+            y=""
+        ) +
+        theme_minimal()
+
+    # save each raincloud plot
+    ggsave(p_rain, "plots/distribution_plots/marginal_ems_diff/marginal_diff_dist_$(a).png")
+
+end;
 
 ```
 
@@ -453,7 +646,7 @@ trauma_obs_dist_diffs = ggplot(
 * It allows analysts to characterize a variable using parameters such as
   - mean ($\mu$) or expected value $E[X]$
   - variance ($\sigma^2$)
-  - rate (\lambda)
+  - rate ($\lambda$)
   - shape parameters $(r, p, \phi)$.
 
 * Supports modeling, inference, simulation, and prediction across scientific and operational domains.
@@ -644,25 +837,102 @@ General Uses:
 * Biological processes with clustering.
 * Overdispersed operational or behavioral data.
 
-# Empirical Distributions
+# Empirical Distributions (Trauma)
 
-## Overall Distribution of Record Counts
-Trauma Registry
+## Pooled Distribution
 
-![](./plots/distribution_plots/trauma_observed_dist_counts.png){.editable}
+![](./plots/distribution_plots/trauma_observed_dist_counts.png)
 
-## Overall Distribution of Reporting Differences
-Trauma Registry
+## Marginal Distribution
 
-![](./plots/distribution_plots/trauma_observed_dist_diffs.png){.editable}
+::: panel-tabset
 
-## Overall Distribution of Record Counts
-EMS Registry
+#### Facility 3 {.smaller}
 
-## Overall Distribution of Reporting Differences
-EMS Registry
+![](./plots/distribution_plots/marginal_trauma_count/marginal_count_dist_Facility_3.png){.absolute width=665px height=462.3px left=11px top=201px}
 
-## Why Raw Counts Follow a Negative Binomial Process
+
+#### Facility 4 {.smaller}
+
+![](./plots/distribution_plots/marginal_trauma_count/marginal_count_dist_Facility_4.png){.absolute width=665px height=462.3px left=11px top=201px}
+
+
+#### Facility 5 {.smaller}
+
+![](./plots/distribution_plots/marginal_trauma_count/marginal_count_dist_Facility_5.png){.absolute width=665px height=462.3px left=11px top=201px}
+
+:::
+
+## Pooled Distribution
+
+![](./plots/distribution_plots/trauma_observed_dist_diffs.png)
+
+## Marginal Distribution
+
+::: panel-tabset
+
+#### Facility 100 {.smaller}
+
+![](./plots/distribution_plots/marginal_trauma_diff/marginal_diff_dist_Facility_100.png){.absolute width=665px height=462.3px left=11px top=201px}
+
+#### Facility 117 {.smaller}
+
+![](./plots/distribution_plots/marginal_trauma_diff/marginal_diff_dist_Facility_117.png){.absolute width=665px height=462.3px left=11px top=201px}
+
+#### Facility 118 {.smaller}
+
+![](./plots/distribution_plots/marginal_trauma_diff/marginal_diff_dist_Facility_118.png){.absolute width=665px height=462.3px left=11px top=201px}
+
+:::
+
+# Empirical Distributions (EMS)
+
+## Pooled Distribution
+
+![](./plots/distribution_plots/ems_observed_dist_counts.png)
+
+## Marginal Distribution
+
+::: panel-tabset
+
+#### Agency 100 {.smaller}
+
+![](./plots/distribution_plots/marginal_ems_count/marginal_count_dist_Agency_100.png){.absolute width=665px height=462.3px left=11px top=201px}
+
+#### Agency 101 {.smaller}
+
+![](./plots/distribution_plots/marginal_ems_count/marginal_count_dist_Agency_101.png){.absolute width=665px height=462.3px left=11px top=201px}
+
+#### Agency 102 {.smaller}
+
+![](./plots/distribution_plots/marginal_ems_count/marginal_count_dist_Agency_102.png){.absolute width=665px height=462.3px left=11px top=201px}
+
+:::
+
+## Pooled Distribution
+
+![](./plots/distribution_plots/ems_observed_dist_diffs.png)
+
+## Marginal Distribution
+
+::: panel-tabset
+
+#### Agency 100 {.smaller}
+
+![](./plots/distribution_plots/marginal_ems_diff/marginal_diff_dist_Agency_100.png){.absolute width=665px height=462.3px left=11px top=201px}
+
+#### Agency 101 {.smaller}
+
+![](./plots/distribution_plots/marginal_ems_diff/marginal_diff_dist_Agency_101.png){.absolute width=665px height=462.3px left=11px top=201px}
+
+#### Agency 102 {.smaller}
+
+![](./plots/distribution_plots/marginal_ems_diff/marginal_diff_dist_Agency_102.png){.absolute width=665px height=462.3px left=11px top=201px}
+
+:::
+
+## Why? 
+Raw Counts Follow a Negative Binomial Process
 
 * Annual registry counts show variance greater than the mean $\sigma^2 > \mu$.
 * Overdispersion and right‑tail behavior are consistent with NB2 mean–variance structure.
@@ -676,7 +946,8 @@ EMS Registry
 
 :::
 
-## Why Year‑to‑Year Differences Are Approximately Normal
+## Why? 
+Year‑to‑Year Differences Are Approximately Normal
 
 * Differences aggregate many small independent influences.
 * Resulting distribution is symmetric around zero.
@@ -696,16 +967,6 @@ EMS Registry
 * Year-over-year differences.
 * Approximate normality.
 
-```{julia}
-#| label: z-score-demo
-#| include: true
-
-@chain trauma_counts begin
-  @select facility_name, "2024", "2025", diff_2025
-end
-
-```
-
 ## Percent Change
 - Operational thresholding.
 
@@ -718,16 +979,22 @@ end
 * Facilities flagged by each detector.
 * Agreement between detectors.
 
+## Actions Taken on Findings
+
+* (So far) Flagged entities using pct change or z-score
+* Reach out to all flagged entities
+* (EMS) submit flagged agencies for further review and contact
+* I reached out to all flagged trauma programs
+
+::: {.notes}
+
+* Almost all flagged facilities that I emailed reached back out.
+* That resulted in providing some TA and resources to those programs.
+
+:::
+
 # Future Extensions
 
 ## Alternative Time Scales
 * Weekly or monthly modeling.
 * Regression-based anomaly detection.
-
-# Appendix
-
-## Julia Code Examples
-
-```julia
-# snippets included here
-``` 
