@@ -1,6 +1,7 @@
 ---
 title: "DICoP Annual Anomaly Detection"
 subtitle: "EMS and Trauma Registry Reporting | 2020–2026"
+author: Nicolas Foss, Ed.D., MS
 date: "2026-07-22"
 format:
   letterbox-revealjs:
@@ -30,19 +31,34 @@ engine: julia
 
 # Introduction
 
+## What we will learn today
+
+**Explore how...**
+
+  - ...EMS and trauma registry reporting behaves statistically.
+  - ...probability distributions help describe reporting patterns.
+
+**Apply...**
+
+- Anomaly detection using two distribution-specific techniques.
+
+::: notes
+Introduce the idea that registry reporting data have structure that is quantifiable and predictable. Highlight that the purpose is not to criticize agencies, but to understand natural variation and identify departures from expected reporting. Clarify that the methods are reproducible and scalable across years, registries, and facilities. Reinforce that the approach integrates distribution theory, empirical visualization, and practical monitoring rules.
+:::
+
 ## Project Purpose
-* Annual anomaly detection for EMS agency and trauma center registry reporting.
-* Use of distributional methods and practical thresholds.
-* Overview of data, methodology, and results.
 
-::: {.notes}
+- Annual anomaly detection for EMS agency and trauma center registry reporting.
+- Use of distributional methods and practical thresholds.
+- Use findings to inform facilities/agencies of reporting irregularities.
+- Response with support and/or discipline as appropriate.
 
-* We have seen data quality struggle in recent years.
-* Monitoring, communication, support to agencies/facilities improves quality.
-* Emphasize the importance of data quality in state registries.
-* Data quality supports analyses, insights, inference.
-* Supports researchers, external partners that use data in different ways.
-
+::: notes
+- We have seen data quality suffer in recent years.
+- Monitoring, communication, support to agencies/facilities improves quality.
+- Emphasize the importance of data quality in state registries.
+- Data quality supports analyses, insights, inference.
+- Supports researchers, external partners that use data in different ways.
 :::
 
 <!-- Setup code -->
@@ -181,6 +197,9 @@ trauma_anomalies_summary = @chain trauma_counts begin
   )
 end;
 
+# get overall anomaly percentage including pct change method
+trauma_anomaly_pct_overall = unique(trauma_anomalies_summary.overall_anomaly_pct);
+
 # recalculate anomalies identified using each strategy for the trauma use case, excluding percent change method
 trauma_anomalies_update = @chain trauma_counts begin
   @summarize(z_anomaly_total = sum(z_anomaly_2025),
@@ -206,6 +225,9 @@ trauma_anomalies_update = @chain trauma_counts begin
     anomaly_method = replace.(anomaly_method, r"_total" => "")
   )
 end;
+
+# get updated anomaly percentage EXCLUDING pct change method
+trauma_anomaly_pct_update = unique(trauma_anomalies_update.overall_anomaly_pct);
 ```
 
 <!-- Data Setup for EMS Data -->
@@ -283,6 +305,9 @@ ems_anomalies_summary = @chain ems_counts begin
   )
 end;
 
+# get overall anomaly percentage including pct change method
+ems_anomaly_pct_overall = unique(ems_anomalies_summary.overall_anomaly_pct);
+
 # recalculate differences between anomalies identified using each strategy for the ems use case, excluding percent change method
 ems_anomalies_summary_update = @chain ems_counts begin
   @summarize(z_anomaly_total = sum(z_anomaly_2025),
@@ -308,6 +333,10 @@ ems_anomalies_summary_update = @chain ems_counts begin
     anomaly_method = replace.(anomaly_method, r"_total" => "")
   )
 end;
+
+# get overall anomaly percentage EXCLUDING pct change method
+ems_anomaly_pct_update = unique(ems_anomalies_summary_update.overall_anomaly_pct);
+
 ```
 
 <!-- Create plots of distributions of interest -->
@@ -319,25 +348,25 @@ end;
 plt_norm = simulate_and_plot("normal");
 
 # save normal distribution figure
-savefig(plt_norm, "./plots/distribution_plots/plt_norm.png")
+savefig(plt_norm, "./plots/distribution_plots/plt_norm.png");
 
 # poisson distribution
 plt_poisson = simulate_and_plot("poisson");
 
 # save poisson distribution figure
-savefig(plt_poisson, "./plots/distribution_plots/plt_poisson.png")
+savefig(plt_poisson, "./plots/distribution_plots/plt_poisson.png");
 
 # quasipoisson process
 plt_quasipoisson = simulate_and_plot("quasipoisson");
 
 # save quasipoisson distribution figure
-savefig(plt_quasipoisson, "./plots/distribution_plots/plt_quasipoisson.png")
+savefig(plt_quasipoisson, "./plots/distribution_plots/plt_quasipoisson.png");
 
 # negative-binomial distribution
 plt_nb = simulate_and_plot("nb");
 
 # save negative-binomial distribution figure
-savefig(plt_nb, "./plots/distribution_plots/plt_nb.png")
+savefig(plt_nb, "./plots/distribution_plots/plt_nb.png");
 
 # beginning year
 start_year = minimum(parse.(Int, unique(trauma_counts_long.year)));
@@ -377,7 +406,7 @@ trauma_obs_dist_counts = ggplot(trauma_count_plot_df, aes(x=:count, y = :year)) 
                           theme_minimal();
 
     # save the truama overall empirical distribution raincloud plot
-    ggsave(trauma_obs_dist_counts, "./plots/distribution_plots/trauma_observed_dist_counts.png")
+    ggsave(trauma_obs_dist_counts, "./plots/distribution_plots/trauma_observed_dist_counts.png");
 
 ## get the empirical distribution of reporting differences - trauma
 trauma_obs_dist_diffs = ggplot(
@@ -401,7 +430,7 @@ trauma_obs_dist_diffs = ggplot(
                           theme_minimal();
 
     # save the truama overall empirical distribution raincloud plot
-    ggsave(trauma_obs_dist_diffs, "./plots/distribution_plots/trauma_observed_dist_diffs.png")
+    ggsave(trauma_obs_dist_diffs, "./plots/distribution_plots/trauma_observed_dist_diffs.png");
 
 # get a temp df for a few trauma facilities
 trauma_count_plot_subset = filter(:facility_id => f -> occursin.(r"Facility_1[0-9][0-9]$", f), trauma_counts_long);
@@ -504,7 +533,7 @@ ems_obs_dist_counts = ggplot(ems_count_plot_df, aes(x=:count, y = :year)) +
                           theme_minimal();
 
     # save the truama overall empirical distribution raincloud plot
-    ggsave(ems_obs_dist_counts, "./plots/distribution_plots/ems_observed_dist_counts.png")
+    ggsave(ems_obs_dist_counts, "./plots/distribution_plots/ems_observed_dist_counts.png");
 
 ## get the empirical distribution of reporting differences - trauma
 ems_obs_dist_diffs = ggplot(
@@ -528,7 +557,7 @@ ems_obs_dist_diffs = ggplot(
                           theme_minimal();
 
     # save the truama overall empirical distribution raincloud plot
-    ggsave(ems_obs_dist_diffs, "./plots/distribution_plots/ems_observed_dist_diffs.png")
+    ggsave(ems_obs_dist_diffs, "./plots/distribution_plots/ems_observed_dist_diffs.png");
 
 # get a temp df for a few trauma facilities
 ems_count_plot_subset = filter(:agency_id => a -> occursin.(r"Agency_1[0-9][0-9]$", a), ems_counts_long);
@@ -607,14 +636,15 @@ end;
 # Data Description
 
 ## Source and Structure
-* Annual counts of record submission (2020–2026).
-* Stable data generating process via scheduled reports from the registries.
+
+- Annual counts of record submission (2020–2026).
+- Stable data generating process via scheduled reports from the registries.
 
 ## Distributional Characteristics
 
-* Annual EMS and trauma registry counts follow discrete, right‑skewed distributions.
-* We use probability distributions to characterize expected reporting patterns at the facility or agency level.
-* Emphasis is on the marginal empirical distributions for each reporting entity, not population parameters.
+- Annual EMS and trauma registry counts follow discrete, right‑skewed distributions.
+- We use probability distributions to characterize expected reporting patterns at the facility or agency level.
+- Emphasis is on the marginal empirical distributions for each reporting entity, not population parameters.
 
 # Probability Distributions
 
@@ -627,65 +657,58 @@ end;
 
 ## Probability Distributions
 
-* A probability distribution describes how a random variable behaves.
-* It specifies the possible values a variable may take and the likelihood associated with each value.
-* Provides a mathematical structure for uncertainty, variation, and randomness.
+- A probability distribution describes how a random variable behaves.
+- It specifies the possible values a variable may take and the likelihood associated with each value.
+- Provides a mathematical structure for uncertainty, variation, and randomness.
 
-::: {.notes}
-
-* Emphasize that a distribution is not merely a shape, but a complete probabilistic description of a variable.
-* Clarify that analysts do not always need a fitted model; sometimes the distribution is used descriptively or predictively.
-* Reinforce that distributions allow quantification of uncertainty, which is essential in epidemiology, trauma registry research, and EMS systems analysis.
-* Highlight that parameters define expected behavior. For example, $\mu$ indicates central tendency, $\sigma^2$ governs spread, and $\lambda$ describes count intensity.
-* It is helpful to remind the audience that all subsequent anomaly detection rests on selecting a distribution that reflects the empirical process.
-
+::: notes
+- Emphasize that a distribution is not merely a shape, but a complete probabilistic description of a variable.
+- Clarify that analysts do not always need a fitted model; sometimes the distribution is used descriptively or predictively.
+- Reinforce that distributions allow quantification of uncertainty, which is essential in epidemiology, trauma registry research, and EMS systems analysis.
+- Highlight that parameters define expected behavior. For example, $\mu$ indicates central tendency, $\sigma^2$ governs spread, and $\lambda$ describes count intensity.
+- It is helpful to remind the audience that all subsequent anomaly detection rests on selecting a distribution that reflects the empirical process.
 :::
 
 ## Probability Distributions
 
-* It allows analysts to characterize a variable using parameters such as
+- It allows analysts to characterize a variable using parameters such as
   - mean ($\mu$) or expected value $E[X]$
   - variance ($\sigma^2$)
   - rate ($\lambda$)
   - shape parameters $(r, p, \phi)$.
-
-* Supports modeling, inference, simulation, and prediction across scientific and operational domains.
+- Supports modeling, inference, simulation, and prediction across scientific and operational domains.
 
 ## Probabilty Density Functions (pdf)
 
-* A PDF applies to continuous random variables.
-* It describes how probability is distributed over intervals of real numbers.
-* It supports probability computations over ranges via integration.
+- A PDF applies to continuous random variables.
+- It describes how probability is distributed over intervals of real numbers.
+- It supports probability computations over ranges via integration.
 
 Example notation:
 
 Normal distribution: $X \sim N(\mu, \sigma^2)$
 
-::: {.notes}
-
-* Stress that a PDF does not give the probability of a single exact value because continuous variables have infinite resolution.
-* Emphasize that PDFs describe “density,” not literal probability.
-* Mention continuous science examples: physiological measurements, reaction times, environmental exposures.
-
+::: notes
+- Stress that a PDF does not give the probability of a single exact value because continuous variables have infinite resolution.
+- Emphasize that PDFs describe “density,” not literal probability.
+- Mention continuous science examples: physiological measurements, reaction times, environmental exposures.
 :::
 
 ## Probability Mass Functions (pmf)
 
-* A PMF applies to discrete random variables.
-* It assigns probabilities to exact integer values or categories.
-* It supports analysis of count outcomes such as incident frequencies or event arrivals.
+- A PMF applies to discrete random variables.
+- It assigns probabilities to exact integer values or categories.
+- It supports analysis of count outcomes such as incident frequencies or event arrivals.
 
-::: {.notes}
-
-* State that PMFs handle variables that cannot take fractional values.
-* Clarify that they are appropriate for modeling incident counts, registry submissions, and other non‑continuous phenomena.
-* You may mention that discrete distributions naturally support prediction intervals because probabilities accumulate at exact values.
-
+::: notes
+- State that PMFs handle variables that cannot take fractional values.
+- Clarify that they are appropriate for modeling incident counts, registry submissions, and other non‑continuous phenomena.
+- You may mention that discrete distributions naturally support prediction intervals because probabilities accumulate at exact values.
 :::
 
 ## Probability Mass Functions (pmf)
 
-* Example notation:
+- Example notation:
 
 Poisson distribution: $X \sim \text{Poisson}(\lambda)$
 
@@ -693,149 +716,143 @@ Negative Binomial: $X \sim \text{NB}(r, p)$
 
 ## Quantile Functions
 
-* A quantile function is the inverse of a cumulative distribution function (CDF).
-* It maps a probability $p$ in the interval $[0,1]$ to the corresponding value of the random variable.
+- A quantile function is the inverse of a cumulative distribution function (CDF).
+- It maps a probability $p$ in the interval $[0,1]$ to the corresponding value of the random variable.
 
-::: {.notes}
-
-* Clarify that quantile functions are central to anomaly detection because they specify what values are expected with specific probabilities.
-* Emphasize that quantile functions are distribution‑specific. The shape and dispersion determine how extreme a value must be to exceed a given probability threshold.
-* State explicitly that quantile functions allow analysts to identify the 95% and 99% upper bounds, which are often used in surveillance or operational monitoring.
-* Stress that quasi‑Poisson does not have a quantile function because it is a quasi‑likelihood model rather than a fully defined distribution, motivating the NB–Poisson approach in this project.
-
+::: notes
+- Clarify that quantile functions are central to anomaly detection because they specify what values are expected with specific probabilities.
+- Emphasize that quantile functions are distribution‑specific. The shape and dispersion determine how extreme a value must be to exceed a given probability threshold.
+- State explicitly that quantile functions allow analysts to identify the 95% and 99% upper bounds, which are often used in surveillance or operational monitoring.
+- Stress that quasi‑Poisson does not have a quantile function because it is a quasi‑likelihood model rather than a fully defined distribution, motivating the NB–Poisson approach in this project.
 :::
 
 ## Quantile Functions
 
-* Quantile functions identify thresholds such as
+- Quantile functions identify thresholds such as
 
   - medians $(p=0.50)$,
   - quartiles $(p=0.25, 0.75)$,
   - prediction bounds for future outcomes
 
-* They provide a direct way to translate probability statements into value statements.
-* They are essential for constructing prediction intervals, tolerance intervals, risk thresholds, and outlier rules.
+- They provide a direct way to translate probability statements into value statements.
+
+- They are essential for constructing prediction intervals, tolerance intervals, risk thresholds, and outlier rules.
 
 ## The Normal Distribution
+
 Notation: $N(\mu, \sigma^2)$
 
 Key Properties:
 
-* Continuous distribution.
-* Symmetric about the mean.
-* Variance controls spread.
-* Often used when many small, independent influences accumulate.
+- Continuous distribution.
+- Symmetric about the mean.
+- Variance controls spread.
+- Often used when many small, independent influences accumulate.
 
-![](./plots/distribution_plots/plt_norm.png){.absolute width=487.5px height=246.1px left=605.5px top=87px}
+![](./plots/distribution_plots/plt_norm.png){.absolute width="487.5px" height="246.1px" left="605.5px" top="87px"}
 
-::: {.notes}
-
-* The normal distribution describes a continuous variable that varies symmetrically around a mean \mu with variance \sigma^2. 
-* It is used to represent aggregated effects of many small independent influences. It provides a foundation for standardized scoring, confidence intervals, and modeling of continuous measurements.
-* Emphasize symmetry, continuous nature, and interpretability. Clarify that many real‑world variables approximate normal behavior when aggregated over time or individuals.
-
+::: notes
+- The normal distribution describes a continuous variable that varies symmetrically around a mean \mu with variance \sigma\^2.
+- It is used to represent aggregated effects of many small independent influences. It provides a foundation for standardized scoring, confidence intervals, and modeling of continuous measurements.
+- Emphasize symmetry, continuous nature, and interpretability. Clarify that many real‑world variables approximate normal behavior when aggregated over time or individuals.
 :::
 
 ## The Normal Distribution
 
 General Uses:
 
-* Measurement data such as heights, blood pressure, or laboratory values.
-* Modeling aggregated effects where the central limit theorem applies.
-* Standardized scoring and z‑score diagnostics.
+- Measurement data such as heights, blood pressure, or laboratory values.
+- Modeling aggregated effects where the central limit theorem applies.
+- Standardized scoring and z‑score diagnostics.
 
 ## Poisson Distribution
+
 Notation: $X \sim \text{Poisson}(\lambda)$
 
 Key Properties:
 
-* Discrete distribution.
-* Integer-valued.
-* Mean and variance = $\lambda$.
-* Models count processes at a constant rate.
-![](./plots/distribution_plots/plt_poisson.png){.absolute width=556.9px height=299.4px left=508px top=104px}
+- Discrete distribution.
+- Integer-valued.
+- Mean and variance = $\lambda$.
+- Models count processes at a constant rate. ![](./plots/distribution_plots/plt_poisson.png){.absolute width="556.9px" height="299.4px" left="508px" top="104px"}
 
-::: {.notes}
-
-* The Poisson distribution models counts of events that occur independently at a constant rate \lambda. 
-* It assumes equidispersion, meaning the mean and variance are both \lambda. It is frequently used for arrival processes, incident tallies, and other independent event counts.
-* Emphasize equidispersion and independence of event arrivals. Note that it is foundational for many stochastic count processes.
-
+::: notes
+- The Poisson distribution models counts of events that occur independently at a constant rate \lambda.
+- It assumes equidispersion, meaning the mean and variance are both \lambda. It is frequently used for arrival processes, incident tallies, and other independent event counts.
+- Emphasize equidispersion and independence of event arrivals. Note that it is foundational for many stochastic count processes.
 :::
 
 ## Poisson Distribution
 
 General Uses:
 
-* Incident arrivals, service calls, or event tallies.
-* Modeling photon counts in physical sciences.
-* Queueing systems where events occur independently.
+- Incident arrivals, service calls, or event tallies.
+- Modeling photon counts in physical sciences.
+- Queueing systems where events occur independently.
 
 ## Quasi-Poisson Model
+
 Notation: $\mu = \lambda, \sigma^2 = \phi\lambda$
 
 Key Properties:
 
-* Extends Poisson
-* Allow overdispersion via $\phi$.
-* Not a specified distribution.
-* Lacks a PMF and quantile function.
-* Used primarily in regression contexts.
+- Extends Poisson
+- Allow overdispersion via $\phi$.
+- Not a specified distribution.
+- Lacks a PMF and quantile function.
+- Used primarily in regression contexts.
 
-![](./plots/distribution_plots/plt_quasipoisson.png){.absolute width=518.6px height=265.3px left=589px top=95px}
+![](./plots/distribution_plots/plt_quasipoisson.png){.absolute width="518.6px" height="265.3px" left="589px" top="95px"}
 
-::: {.notes}
-
-* The quasi‑Poisson model extends the Poisson framework to allow variance inflation through a dispersion parameter \phi such that $\sigma^2 = \phi\lambda$. It is not a fully specified probability distribution. It is primarily used within generalized linear modeling contexts when count data exhibit mild overdispersion relative to Poisson assumptions.
-* Can be described as a Poisson-Gamma mixture.
-* Clarify that quasi‑Poisson is a quasi‑likelihood framework and cannot generate prediction intervals. Useful in modeling, not in probability‑based decision rules.
-
+::: notes
+- The quasi‑Poisson model extends the Poisson framework to allow variance inflation through a dispersion parameter \phi such that $\sigma^2 = \phi\lambda$. It is not a fully specified probability distribution. It is primarily used within generalized linear modeling contexts when count data exhibit mild overdispersion relative to Poisson assumptions.
+- Can be described as a Poisson-Gamma mixture.
+- Clarify that quasi‑Poisson is a quasi‑likelihood framework and cannot generate prediction intervals. Useful in modeling, not in probability‑based decision rules.
 :::
 
 ## Quasi-Poisson Model
 
 General Uses:
 
-* Count regression models with mild overdispersion.
-* Situations where Poisson assumptions fail but a full distribution is not required.
-* Modeling datasets where variance inflation is present.
+- Count regression models with mild overdispersion.
+- Situations where Poisson assumptions fail but a full distribution is not required.
+- Modeling datasets where variance inflation is present.
 
 ## Negative Binomial Distribution
+
 Notation: $X \sim \text{NB}(r, p)$
 
-where 
+where
 
-* $r=n_{successes}$ and 
-* $p=P(Success)$
+- $r=n_{successes}$ and
+- $p=P(Success)$
 
 NB2 Parameterization: $\mu$, $\sigma^2=\mu+\frac{\mu^2}{r}$
 
-![](./plots/distribution_plots/plt_nb.png){.absolute width=654.1px height=271.2px left=458px top=178px}
+![](./plots/distribution_plots/plt_nb.png){.absolute width="654.1px" height="271.2px" left="458px" top="178px"}
 
 ## Negative Binomial Distribution
 
 Key Properties:
 
-* Discrete distribution
-* Strong right‑skew.
-* Variance exceeds the mean.
-* Robust to overdispersion.
+- Discrete distribution
+- Strong right‑skew.
+- Variance exceeds the mean.
+- Robust to overdispersion.
 
-::: {.notes}
-
-* The negative binomial distribution models discrete counts with variance greater than the mean. Under the NB2 mean‑variance relationship, the mean is μ and the variance is $\sigma^2 = \mu + \frac{\mu^2}{r}$, where r is a shape parameter. 
-* An alternative interpretation views r as the number of successes and models the number of failures before the r‑th success with success probability p. It is widely used for overdispersed count processes.
-* Highlight flexibility and suitability for heavy‑tailed count data. Emphasize that NB supports quantile‑based predictions and formal probability statements.
-
+::: notes
+- The negative binomial distribution models discrete counts with variance greater than the mean. Under the NB2 mean‑variance relationship, the mean is μ and the variance is $\sigma^2 = \mu + \frac{\mu^2}{r}$, where r is a shape parameter.
+- An alternative interpretation views r as the number of successes and models the number of failures before the r‑th success with success probability p. It is widely used for overdispersed count processes.
+- Highlight flexibility and suitability for heavy‑tailed count data. Emphasize that NB supports quantile‑based predictions and formal probability statements.
 :::
 
 ## Negative Binomial Distribution
 
 General Uses:
 
-* Event counts with substantial heterogeneity.
-* Biological processes with clustering.
-* Overdispersed operational or behavioral data.
+- Event counts with substantial heterogeneity.
+- Biological processes with clustering.
+- Overdispersed operational or behavioral data.
 
 # Empirical Distributions (Trauma)
 
@@ -846,21 +863,17 @@ General Uses:
 ## Marginal Distribution
 
 ::: panel-tabset
-
 #### Facility 3 {.smaller}
 
-![](./plots/distribution_plots/marginal_trauma_count/marginal_count_dist_Facility_3.png){.absolute width=665px height=462.3px left=11px top=201px}
-
+![](./plots/distribution_plots/marginal_trauma_count/marginal_count_dist_Facility_3.png){.absolute width="665px" height="462.3px" left="11px" top="201px"}
 
 #### Facility 4 {.smaller}
 
-![](./plots/distribution_plots/marginal_trauma_count/marginal_count_dist_Facility_4.png){.absolute width=665px height=462.3px left=11px top=201px}
-
+![](./plots/distribution_plots/marginal_trauma_count/marginal_count_dist_Facility_4.png){.absolute width="665px" height="462.3px" left="11px" top="201px"}
 
 #### Facility 5 {.smaller}
 
-![](./plots/distribution_plots/marginal_trauma_count/marginal_count_dist_Facility_5.png){.absolute width=665px height=462.3px left=11px top=201px}
-
+![](./plots/distribution_plots/marginal_trauma_count/marginal_count_dist_Facility_5.png){.absolute width="665px" height="462.3px" left="11px" top="201px"}
 :::
 
 ## Pooled Distribution
@@ -870,19 +883,17 @@ General Uses:
 ## Marginal Distribution
 
 ::: panel-tabset
-
 #### Facility 100 {.smaller}
 
-![](./plots/distribution_plots/marginal_trauma_diff/marginal_diff_dist_Facility_100.png){.absolute width=665px height=462.3px left=11px top=201px}
+![](./plots/distribution_plots/marginal_trauma_diff/marginal_diff_dist_Facility_100.png){.absolute width="665px" height="462.3px" left="11px" top="201px"}
 
 #### Facility 117 {.smaller}
 
-![](./plots/distribution_plots/marginal_trauma_diff/marginal_diff_dist_Facility_117.png){.absolute width=665px height=462.3px left=11px top=201px}
+![](./plots/distribution_plots/marginal_trauma_diff/marginal_diff_dist_Facility_117.png){.absolute width="665px" height="462.3px" left="11px" top="201px"}
 
 #### Facility 118 {.smaller}
 
-![](./plots/distribution_plots/marginal_trauma_diff/marginal_diff_dist_Facility_118.png){.absolute width=665px height=462.3px left=11px top=201px}
-
+![](./plots/distribution_plots/marginal_trauma_diff/marginal_diff_dist_Facility_118.png){.absolute width="665px" height="462.3px" left="11px" top="201px"}
 :::
 
 # Empirical Distributions (EMS)
@@ -894,19 +905,17 @@ General Uses:
 ## Marginal Distribution
 
 ::: panel-tabset
-
 #### Agency 100 {.smaller}
 
-![](./plots/distribution_plots/marginal_ems_count/marginal_count_dist_Agency_100.png){.absolute width=665px height=462.3px left=11px top=201px}
+![](./plots/distribution_plots/marginal_ems_count/marginal_count_dist_Agency_100.png){.absolute width="665px" height="462.3px" left="11px" top="201px"}
 
 #### Agency 101 {.smaller}
 
-![](./plots/distribution_plots/marginal_ems_count/marginal_count_dist_Agency_101.png){.absolute width=665px height=462.3px left=11px top=201px}
+![](./plots/distribution_plots/marginal_ems_count/marginal_count_dist_Agency_101.png){.absolute width="665px" height="462.3px" left="11px" top="201px"}
 
 #### Agency 102 {.smaller}
 
-![](./plots/distribution_plots/marginal_ems_count/marginal_count_dist_Agency_102.png){.absolute width=665px height=462.3px left=11px top=201px}
-
+![](./plots/distribution_plots/marginal_ems_count/marginal_count_dist_Agency_102.png){.absolute width="665px" height="462.3px" left="11px" top="201px"}
 :::
 
 ## Pooled Distribution
@@ -916,85 +925,228 @@ General Uses:
 ## Marginal Distribution
 
 ::: panel-tabset
-
 #### Agency 100 {.smaller}
 
-![](./plots/distribution_plots/marginal_ems_diff/marginal_diff_dist_Agency_100.png){.absolute width=665px height=462.3px left=11px top=201px}
+![](./plots/distribution_plots/marginal_ems_diff/marginal_diff_dist_Agency_100.png){.absolute width="665px" height="462.3px" left="11px" top="201px"}
 
 #### Agency 101 {.smaller}
 
-![](./plots/distribution_plots/marginal_ems_diff/marginal_diff_dist_Agency_101.png){.absolute width=665px height=462.3px left=11px top=201px}
+![](./plots/distribution_plots/marginal_ems_diff/marginal_diff_dist_Agency_101.png){.absolute width="665px" height="462.3px" left="11px" top="201px"}
 
 #### Agency 102 {.smaller}
 
-![](./plots/distribution_plots/marginal_ems_diff/marginal_diff_dist_Agency_102.png){.absolute width=665px height=462.3px left=11px top=201px}
-
+![](./plots/distribution_plots/marginal_ems_diff/marginal_diff_dist_Agency_102.png){.absolute width="665px" height="462.3px" left="11px" top="201px"}
 :::
 
-## Why? 
+## Why?
+
 Raw Counts Follow a Negative Binomial Process
 
-* Annual registry counts show variance greater than the mean $\sigma^2 > \mu$.
-* Overdispersion and right‑tail behavior are consistent with NB2 mean–variance structure.
-* Facility‑level heterogeneity produces clustering and heavy‑tailed count patterns.
+- Annual registry counts show variance greater than the mean $\sigma^2 > \mu$.
+- Overdispersion and right‑tail behavior are consistent with NB2 mean–variance structure.
+- Facility‑level heterogeneity produces clustering and heavy‑tailed count patterns.
 
-::: {.notes}
-
-* Emphasize that facility characteristics create different expected record volumes, which inflates variance beyond Poisson assumptions.
-* Remind the audience that σ² > μ is the signature of a negative binomial process.
-* Clarify that NB supports prediction intervals because it is a fully specified probability distribution.
-
+::: notes
+- Emphasize that facility characteristics create different expected record volumes, which inflates variance beyond Poisson assumptions.
+- Remind the audience that σ² \> μ is the signature of a negative binomial process.
+- Clarify that NB supports prediction intervals because it is a fully specified probability distribution.
 :::
 
-## Why? 
-Year‑to‑Year Differences Are Approximately Normal
+## Why?
 
-* Differences aggregate many small independent influences.
-* Resulting distribution is symmetric around zero.
-* Variability in annual changes is smaller than variability in raw counts.
+Year‑to‑Year Differences Are Asymptotically Normal
 
-::: {.notes}
+- We observe that
 
-* Highlight the central limit mechanism: small independent factors accumulate to yield an approximate normal distribution.
-* Reinforce that differenced data often display symmetry, even when raw data do not.
-* Note that using z‑scores on differences is appropriate when differences approximate Gaussian behavior.
+$\Delta \xrightarrow{d} N(\mu, \sigma^2) \quad \text{as } N \to \infty$
 
+- Differences aggregate many small independent influences.
+- Resulting distribution is symmetric around zero.
+- Variability in annual changes is smaller than variability in raw counts.
+
+::: notes
+- Highlight the central limit mechanism: small independent factors accumulate to yield an approximate normal distribution.
+- Reinforce that differenced data often display symmetry, even when raw data do not.
+- Note that using z‑scores on differences is appropriate when differences approximate Gaussian behavior.
 :::
 
 # Anomaly Detection Methods
 
-## Z‑Score
-* Year-over-year differences.
-* Approximate normality.
+## Methods
 
-## Percent Change
-- Operational thresholding.
+- Z‑Score
 
-## NB–Poisson Prediction Interval
-* Distribution-based expected ranges.
+  - Year-over-year differences.
+  - Approximate normality.
+
+- Percent Change
+
+  - Operational thresholding.
+
+- NB–Poisson Prediction Interval
+
+  - Distribution-based expected ranges.
+
+  ::: notes
+  - Here we can describe our approach.
+  - How we got to the key statistics that help us to detect anomalies.
+  :::
 
 # Results
 
-## Summary of Findings
-* Facilities flagged by each detector.
-* Agreement between detectors.
+## View of the Calculated Table
 
-## Actions Taken on Findings
+```{julia}
+#| label: demo-trauma-calc
+#| include: true
 
-* (So far) Flagged entities using pct change or z-score
-* Reach out to all flagged entities
-* (EMS) submit flagged agencies for further review and contact
-* I reached out to all flagged trauma programs
+# get facility IDs
+trauma_anomalies_ids = @chain trauma_anomalies begin
+  @mutate(id = "Facility_" * string(row_number()),
+          z_score_diff_2025 = round(z_score_diff_2025; digits=4)
+    )
+  @relocate(id, before = facility_name)
+  @select id, "2024":"2025", diff_2025, pct_2025, z_score_diff_2025, pred_interval_lower, pred_interval_upper, z_anomaly_2025, pct_anomaly_2025, nb_pois_anomaly_2025
+  @filter row_number() < 6
+end;
+
+pretty_table(
+trauma_anomalies_ids[:, 1:6],
+  column_labels = ["Facility", "2024", "2025", "Diff", "Pct Chng", "Z Score Diff"]
+)
+
+pretty_table(
+  select(trauma_anomalies_ids, 1, 7:ncol(trauma_anomalies_ids)),
+  column_labels = ["Facility", "Expected Lower", "Expected Upper", "Z?", "Pct?", "NBP?"]
+)
+```
 
 ::: {.notes}
 
-* Almost all flagged facilities that I emailed reached back out.
-* That resulted in providing some TA and resources to those programs.
+- Results only for 2025, so counts reduce to number of flagged entities out of the total.
+- Many other statistics are calculated and this is only a subset of the full table.
+  - Includes mean records, record variance, record standard deviation, differences between each set of years, z score for each year.
+  - Also the mean, variance, std. dev of the differences, pct change between each set of years.
+  - Anomaly flags for each of the methods z, pct, NBP for all years, and then for each year except for the first.
+- Notice how the pct change flags all these records, but z score and NBP are more selective.
+- NBP and and the normal distribution might be more accurate.
+- Difficult to gauge true/false positives given that there is no ground truth - an anomaly is dependent on context. 
 
 :::
 
-# Future Extensions
+```{julia}
+#| label: summary-counts
 
-## Alternative Time Scales
-* Weekly or monthly modeling.
-* Regression-based anomaly detection.
+# ems total anomalies
+ems_total_anomalies = unique(ems_anomalies_summary.total_anomalies);
+
+# ems total agencies
+ems_total_agencies = unique(ems_anomalies_summary.total_agencies);
+
+# trauma total anomalies
+trauma_total_anomalies = unique(trauma_anomalies_summary.total_anomalies);
+
+# trauma total facilities
+trauma_total_facilities = unique(trauma_anomalies_summary.total_facilities);
+
+```
+
+## Summary of Findings
+
+**EMS**
+
+Overall, we detected *`{julia} ems_total_anomalies[1]` out of `{julia} ems_total_agencies[1]` EMS agencies = `{julia} ems_anomaly_pct_overall[1]`%* had anomalies in reporting **using the full model**.
+ 
+```{julia}
+#| label: ems-table1
+#| include: true
+
+PrettyTables.pretty_table(
+  select(ems_anomalies_summary, 1:2, 5:6),
+  column_labels = ["Method", "# Anomalies", "% of Anomalies", "% Agencies"]
+)
+
+```
+
+## Summary of findings
+
+**Trauma** 
+
+Overall, we detected *`{julia} trauma_total_anomalies[1]` out of `{julia} trauma_total_facilities[1]` trauma programs = `{julia} trauma_anomaly_pct_overall[1]`%* had anomalies in reporting **using the full model**.
+ 
+```{julia}
+#| label: trauma-table1
+#| include: true
+PrettyTables.pretty_table(
+  select(trauma_anomalies_summary, 1:2, 5:6),
+  column_labels = ["Method", "# Anomalies", "% of Anomalies", "% Agencies"]
+)
+
+
+```
+
+## Summary of Findings
+
+**EMS**
+
+However, using only **NBP and z-score**, we detected *`{julia} unique(ems_anomalies_summary_update.total_anomalies)[1]`* anomalies among
+
+- *`{julia} ems_anomaly_pct_update[1]`% of `{julia} ems_total_agencies[1]` EMS agencies*
+
+```{julia}
+#| label: ems-table2
+#| include: true
+
+PrettyTables.pretty_table(
+  select(ems_anomalies_summary_update, 1:2, 5:6),
+  column_labels = ["Method", "# Anomalies", "% of Anomalies", "% Agencies"]
+)
+
+```
+
+## Summary of Findings
+
+**Trauma** 
+
+However, using only **NBP and z-score**, we detected *`{julia} unique(trauma_anomalies_update.total_anomalies)[1]`* anomalies among
+
+- `{julia} trauma_anomaly_pct_update[1]`% out of `{julia} trauma_total_facilities[1]` trauma programs
+
+```{julia}
+#| label: trauma-table2
+#| include: true
+
+PrettyTables.pretty_table(
+  select(trauma_anomalies_update, 1:2, 5:6),
+  column_labels = ["Method", "# Anomalies", "% of Anomalies", "% Agencies"]
+)
+
+```
+
+## Actions Taken on Findings
+
+- (So far) Flagged entities using pct change or z-score
+- Reach out to all flagged entities
+- (EMS) submit flagged agencies for further review and contact
+- I reached out to all flagged trauma programs
+
+::: notes
+- Almost all flagged facilities that I emailed reached back out.
+- That resulted in providing some TA and resources to those programs.
+:::
+
+# Questions?
+
+# Thank you!
+
+## Contact
+
+Nicolas Foss, Ed.D., MS
+
+Epidemiologist
+
+Bureau of Emergency Medical and Trauma Services
+
+Division of Public Health
+
+nicolas.foss@hhs.iowa.gov
