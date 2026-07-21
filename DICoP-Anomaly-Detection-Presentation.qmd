@@ -1055,7 +1055,7 @@ trauma_total_facilities = unique(trauma_anomalies_summary.total_facilities);
 
 **EMS**
 
-Overall, we detected *`{julia} ems_total_anomalies[1]` out of `{julia} ems_total_agencies[1]` EMS agencies = `{julia} ems_anomaly_pct_overall[1]`%* had anomalies in reporting **using the full model**.
+**Using the full model**, we detected *`{julia} ems_total_anomalies[1]` out of `{julia} ems_total_agencies[1]` EMS agencies = `{julia} ems_anomaly_pct_overall[1]`%* had anomalies in reporting.
  
 ```{julia}
 #| label: ems-table1
@@ -1072,7 +1072,7 @@ PrettyTables.pretty_table(
 
 **Trauma** 
 
-Overall, we detected *`{julia} trauma_total_anomalies[1]` out of `{julia} trauma_total_facilities[1]` trauma programs = `{julia} trauma_anomaly_pct_overall[1]`%* had anomalies in reporting **using the full model**.
+**Using the full model**, we detected *`{julia} trauma_total_anomalies[1]` out of `{julia} trauma_total_facilities[1]` trauma programs = `{julia} trauma_anomaly_pct_overall[1]`%* had anomalies in reporting.
  
 ```{julia}
 #| label: trauma-table1
@@ -1089,7 +1089,7 @@ PrettyTables.pretty_table(
 
 **EMS**
 
-However, using only **NBP and z-score**, we detected *`{julia} unique(ems_anomalies_summary_update.total_anomalies)[1]`* anomalies among
+Using only **NBP and z-score**, we detected *`{julia} unique(ems_anomalies_summary_update.total_anomalies)[1]`* anomalies among
 
 - *`{julia} ems_anomaly_pct_update[1]`% of `{julia} ems_total_agencies[1]` EMS agencies*
 
@@ -1108,7 +1108,7 @@ PrettyTables.pretty_table(
 
 **Trauma** 
 
-However, using only **NBP and z-score**, we detected *`{julia} unique(trauma_anomalies_update.total_anomalies)[1]`* anomalies among
+Using only **NBP and z-score**, we detected *`{julia} unique(trauma_anomalies_update.total_anomalies)[1]`* anomalies among
 
 - `{julia} trauma_anomaly_pct_update[1]`% out of `{julia} trauma_total_facilities[1]` trauma programs
 
@@ -1141,9 +1141,9 @@ PrettyTables.pretty_table(
 
 ## Contact
 
-Nicolas Foss, Ed.D., MS
+**Nicolas Foss, Ed.D., MS**
 
-Epidemiologist
+**Epidemiologist**
 
 Bureau of Emergency Medical and Trauma Services
 
