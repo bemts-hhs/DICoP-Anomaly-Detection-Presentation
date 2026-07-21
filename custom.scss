@@ -28,7 +28,7 @@ $accent-mint: #b9e1da;
 .reveal {
   background-color: #ffffff;
   /* white background */
-  color: $secondary-teal;
+  color: $secondary-gray;
   /* teal text */
   font-family: "Work Sans", sans-serif;
 }
@@ -58,6 +58,21 @@ $accent-mint: #b9e1da;
   /* offset from bottom */
   bottom: 20px;
 }
+
+/* Center the logo at the bottom */
+.reveal section.slide-logo  {
+  height: 75px !important;
+  width: auto !important;
+  max-width: unset !important;
+  max-height: unset !important;
+  height: auto;
+  position: absolute;
+  /* move horizontal midpoint */
+  left: 68%;
+  /* offset from bottom */
+  bottom: 20px;
+}
+
 
 /* Title slide: font + color overrides */
 .reveal section.title-slide h1.title {

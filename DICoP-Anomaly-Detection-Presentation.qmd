@@ -1,6 +1,6 @@
 ---
 title: "DICoP Annual Anomaly Detection"
-subtitle: "EMS and Trauma Registry Reporting | 2020–2026"
+subtitle: "EMS and Trauma Registry Reporting | 2020-2026"
 author: Nicolas Foss, Ed.D., MS
 date: "2026-07-22"
 format:
@@ -27,6 +27,9 @@ execute:
   eval: true
   include: false
 engine: julia
+params:
+  project_start: "2020"
+  project_end: "2026"
 ---
 
 # Introduction
@@ -66,10 +69,8 @@ Introduce the idea that registry reporting data have structure that is quantifia
 ```{julia}
 #| label: setup
 
-###_____________________________________________________________________________
 # Setup for the anomaly detection project to leverage Tidier and DotEnv
 # Setup for the environment variables to be used to secure filepaths
-###_____________________________________________________________________________
 
 using Pkg
 
@@ -343,6 +344,8 @@ ems_anomaly_pct_update = unique(ems_anomalies_summary_update.overall_anomaly_pct
 
 ```{julia}
 #| label: dist-setup
+
+# produce plots of empirical and marginal distributions
 
 # normal distribution
 plt_norm = simulate_and_plot("normal");
@@ -637,7 +640,9 @@ end;
 
 ## Source and Structure
 
-- Annual counts of record submission (2020–2026).
+- Iowa state trauma and EMS registries
+- Managed by the Bureau of Emergency Medical and Trauma Services
+- Annual counts of record submission (`{julia} project_start`-`{julia} project_end`).
 - Stable data generating process via scheduled reports from the registries.
 
 ## Distributional Characteristics
@@ -723,7 +728,7 @@ Negative Binomial: $X \sim \text{NB}(r, p)$
 - Clarify that quantile functions are central to anomaly detection because they specify what values are expected with specific probabilities.
 - Emphasize that quantile functions are distribution‑specific. The shape and dispersion determine how extreme a value must be to exceed a given probability threshold.
 - State explicitly that quantile functions allow analysts to identify the 95% and 99% upper bounds, which are often used in surveillance or operational monitoring.
-- Stress that quasi‑Poisson does not have a quantile function because it is a quasi‑likelihood model rather than a fully defined distribution, motivating the NB–Poisson approach in this project.
+- Stress that quasi‑Poisson does not have a quantile function because it is a quasi‑likelihood model rather than a fully defined distribution, motivating the NB-Poisson approach in this project.
 :::
 
 ## Quantile Functions
@@ -738,7 +743,7 @@ Negative Binomial: $X \sim \text{NB}(r, p)$
 
 - They are essential for constructing prediction intervals, tolerance intervals, risk thresholds, and outlier rules.
 
-## The Normal Distribution
+## The Normal Distribution {.smaller}
 
 Notation: $N(\mu, \sigma^2)$
 
@@ -747,9 +752,9 @@ Key Properties:
 - Continuous distribution.
 - Symmetric about the mean.
 - Variance controls spread.
-- Often used when many small, independent influences accumulate.
 
-![](./plots/distribution_plots/plt_norm.png){.absolute width="487.5px" height="246.1px" left="605.5px" top="87px"}
+![](./plots/distribution_plots/plt_norm.png){.absolute width=695.6px height=423.4px left=423.4px top=172.6px}
+
 
 ::: notes
 - The normal distribution describes a continuous variable that varies symmetrically around a mean \mu with variance \sigma\^2.
@@ -765,7 +770,7 @@ General Uses:
 - Modeling aggregated effects where the central limit theorem applies.
 - Standardized scoring and z‑score diagnostics.
 
-## Poisson Distribution
+## Poisson Distribution {.smaller}
 
 Notation: $X \sim \text{Poisson}(\lambda)$
 
@@ -774,7 +779,8 @@ Key Properties:
 - Discrete distribution.
 - Integer-valued.
 - Mean and variance = $\lambda$.
-- Models count processes at a constant rate. ![](./plots/distribution_plots/plt_poisson.png){.absolute width="556.9px" height="299.4px" left="508px" top="104px"}
+
+![](./plots/distribution_plots/plt_poisson.png){.absolute width=742.8px height=461.8px left=368px top=79px}
 
 ::: notes
 - The Poisson distribution models counts of events that occur independently at a constant rate \lambda.
@@ -790,7 +796,7 @@ General Uses:
 - Modeling photon counts in physical sciences.
 - Queueing systems where events occur independently.
 
-## Quasi-Poisson Model
+## Quasi-Poisson Model {.smaller}
 
 Notation: $\mu = \lambda, \sigma^2 = \phi\lambda$
 
@@ -799,12 +805,12 @@ Key Properties:
 - Extends Poisson
 - Allow overdispersion via $\phi$.
 - Not a specified distribution.
-- Lacks a PMF and quantile function.
-- Used primarily in regression contexts.
 
-![](./plots/distribution_plots/plt_quasipoisson.png){.absolute width="518.6px" height="265.3px" left="589px" top="95px"}
+![](./plots/distribution_plots/plt_quasipoisson.png){.absolute width=705.5px height=373.6px left=416px top=72px}
 
 ::: notes
+- Lacks a PMF and quantile function.
+- Used primarily in regression contexts.
 - The quasi‑Poisson model extends the Poisson framework to allow variance inflation through a dispersion parameter \phi such that $\sigma^2 = \phi\lambda$. It is not a fully specified probability distribution. It is primarily used within generalized linear modeling contexts when count data exhibit mild overdispersion relative to Poisson assumptions.
 - Can be described as a Poisson-Gamma mixture.
 - Clarify that quasi‑Poisson is a quasi‑likelihood framework and cannot generate prediction intervals. Useful in modeling, not in probability‑based decision rules.
@@ -818,7 +824,7 @@ General Uses:
 - Situations where Poisson assumptions fail but a full distribution is not required.
 - Modeling datasets where variance inflation is present.
 
-## Negative Binomial Distribution
+## Negative Binomial Distribution {.smaller}
 
 Notation: $X \sim \text{NB}(r, p)$
 
@@ -826,10 +832,9 @@ where
 
 - $r=n_{successes}$ and
 - $p=P(Success)$
+- $\sigma^2=\mu+\frac{\mu^2}{r}$
 
-NB2 Parameterization: $\mu$, $\sigma^2=\mu+\frac{\mu^2}{r}$
-
-![](./plots/distribution_plots/plt_nb.png){.absolute width="654.1px" height="271.2px" left="458px" top="178px"}
+![](./plots/distribution_plots/plt_nb.png){.absolute width=804.4px height=479.1px left=315px top=79px}
 
 ## Negative Binomial Distribution
 
@@ -943,7 +948,7 @@ General Uses:
 Raw Counts Follow a Negative Binomial Process
 
 - Annual registry counts show variance greater than the mean $\sigma^2 > \mu$.
-- Overdispersion and right‑tail behavior are consistent with NB2 mean–variance structure.
+- Overdispersion and right‑tail behavior are consistent with NB2 mean-variance structure.
 - Facility‑level heterogeneity produces clustering and heavy‑tailed count patterns.
 
 ::: notes
@@ -983,7 +988,7 @@ $\Delta \xrightarrow{d} N(\mu, \sigma^2) \quad \text{as } N \to \infty$
 
   - Operational thresholding.
 
-- NB–Poisson Prediction Interval
+- NB-Poisson Prediction Interval
 
   - Distribution-based expected ranges.
 
@@ -999,6 +1004,8 @@ $\Delta \xrightarrow{d} N(\mu, \sigma^2) \quad \text{as } N \to \infty$
 ```{julia}
 #| label: demo-trauma-calc
 #| include: true
+
+# trauma: product illustrative tables of data structure post-computation
 
 # get facility IDs
 trauma_anomalies_ids = @chain trauma_anomalies begin
@@ -1037,6 +1044,8 @@ pretty_table(
 ```{julia}
 #| label: summary-counts
 
+# get ems and trauma reporting constants
+
 # ems total anomalies
 ems_total_anomalies = unique(ems_anomalies_summary.total_anomalies);
 
@@ -1061,6 +1070,8 @@ trauma_total_facilities = unique(trauma_anomalies_summary.total_facilities);
 #| label: ems-table1
 #| include: true
 
+# print the full model EMS anomaly summary table
+
 PrettyTables.pretty_table(
   select(ems_anomalies_summary, 1:2, 5:6),
   column_labels = ["Method", "# Anomalies", "% of Anomalies", "% Agencies"]
@@ -1077,6 +1088,9 @@ PrettyTables.pretty_table(
 ```{julia}
 #| label: trauma-table1
 #| include: true
+
+# print the full model trauma anomaly summary table
+
 PrettyTables.pretty_table(
   select(trauma_anomalies_summary, 1:2, 5:6),
   column_labels = ["Method", "# Anomalies", "% of Anomalies", "% Agencies"]
@@ -1097,6 +1111,8 @@ Using only **NBP and z-score**, we detected *`{julia} unique(ems_anomalies_summa
 #| label: ems-table2
 #| include: true
 
+# print the limited model EMS anomaly summary table
+
 PrettyTables.pretty_table(
   select(ems_anomalies_summary_update, 1:2, 5:6),
   column_labels = ["Method", "# Anomalies", "% of Anomalies", "% Agencies"]
@@ -1116,6 +1132,8 @@ Using only **NBP and z-score**, we detected *`{julia} unique(trauma_anomalies_up
 #| label: trauma-table2
 #| include: true
 
+# print the limited model trauma anomaly summary table
+
 PrettyTables.pretty_table(
   select(trauma_anomalies_update, 1:2, 5:6),
   column_labels = ["Method", "# Anomalies", "% of Anomalies", "% Agencies"]
@@ -1134,6 +1152,13 @@ PrettyTables.pretty_table(
 - Almost all flagged facilities that I emailed reached back out.
 - That resulted in providing some TA and resources to those programs.
 :::
+
+## Extensions
+
+- Pull data at different grain (quarterly)
+  - annual data gave an opportunity for proof of concept
+- Live surveillance system using datamarts (Fall 2026)
+  - Field and Trauma Coordinators can surveil program performance in real time.
 
 # Questions?
 
